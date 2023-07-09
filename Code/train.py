@@ -2,17 +2,15 @@ from prefect import flow,task
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_curve,accuracy_score,f1_score,auc
 from sklearn.feature_extraction import DictVectorizer
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import train_test_split
 import xgboost 
 import mlflow
 import pandas as pd
-import matplotlib.pyplot as plt
-import pickle
+from  helper import DataFrameToArrayTransformer
 
 mlflow.set_tracking_uri('http://127.0.0.1:5000')
-mlflow.autolog()
+# mlflow.autolog()
 
 @task(retries=3)
 def getdata():
@@ -29,52 +27,20 @@ def clendata(df_main):
                                             4 if x>=47 and x<60 else  \
                                             5 if x>=60 and x<90 else  \
                                             6)
+    df_main = df_main.drop(['y'],axis=1)
     return df_main
 
 
-def preparedata(data,dv,sc,mode=None):
-    if mode =='init':
-        dv = DictVectorizer(sparse=True)
-        data_tran = dv.fit_transform(data.to_dict(orient='records'))        
-        sc = StandardScaler()
-        data_tran = sc.fit_transform(data_tran.toarray())
-        return data_tran,dv,sc
-    else:
-        # Tranform data with DV    
-        data_tran = dv.transform(data.to_dict(orient='records'))
-        data_tran = sc.transform(data_tran.toarray())
-        return data_tran
-    
 @task
 def score(y_test,y_pred):
     score = accuracy_score(y_test,y_pred.round())
     f1 = f1_score(y_test,y_pred.round())
+    fp,tp,_ =roc_curve(y_test,y_pred)
     print(f'Accuary {score}')
     print(f'F1 Score {f1}')
-    fpr, tpr, _ = roc_curve(y_test,  y_pred)
-    # print(f'auc = {auc(fpr,tpr)}')
-    # plt.style.use('classic')
-    # plt.figure(figsize=(6,6))
-    # plt.plot(fpr,tpr)
-    # plt.ylabel('True Positive Rate')
-    # plt.xlabel('False Positive Rate')
-    # plt.show()
-    return score,f1
-
-@task
-def splitdata(df_drop):
-    train_df,test_df = train_test_split(df_drop,test_size=0.3,random_state=1)
-
-    # Peapare data
-    x_train = train_df.drop([ 'y_int'],axis=1)
-    x_train,dv,sc = preparedata(x_train,None,None,'init')
-    y_train = train_df['y_int']
-    
-    x_test = test_df.drop([ 'y_int'],axis=1)
-    x_test = preparedata(x_test,dv,sc,None)
-    y_test = test_df['y_int']
-
-    return x_train,x_test,y_train,y_test
+    print(f'FP {fp.mean()}')
+    print(f'TP {tp.mean()}')
+    return score,f1,fp.mean(),tp.mean()
 
 @task
 def trainmodel_xgb(x_train,y_train):
@@ -83,50 +49,38 @@ def trainmodel_xgb(x_train,y_train):
 
     return xgb
 
-@task
-def trainmodel_tree(x_train,y_train):
-    tree = DecisionTreeClassifier(min_samples_split=5, min_samples_leaf=25, max_depth=8, criterion='gini')
-    tree.fit(x_train,y_train)
-
-    return tree
-
-@task
-def trainmodel_logis(x_train,y_train):
-    logis = LogisticRegression(max_iter=1000)
-    logis.fit(x_train,y_train)
-
-    return logis
-
-
 @flow
 def main():
     df_main = getdata()
     df_main = clendata(df_main)
 
-    df_drop = df_main.drop(['y'],axis=1)
-    # int_col = df_drop.dtypes[df_drop.dtypes!='object'].index.to_list()[:-1]
-    # cat_col = df_drop.dtypes[df_drop.dtypes=='object'].index.to_list()
+    train_df,test_df = train_test_split(df_main,test_size=0.3,random_state=1)
 
-    x_train,x_test,y_train,y_test = splitdata(df_drop)
+    # Split data
+    x_train = train_df.drop([ 'y_int'],axis=1).to_dict(orient='records')
+    y_train = train_df['y_int']
+    x_test = test_df.drop([ 'y_int'],axis=1).to_dict(orient='records')
+    y_test = test_df['y_int']
 
-    # Tranin model
+    # Train model
     mlflow.set_experiment('ML-xgb')
-    model_xg = trainmodel_xgb(x_train,y_train)
-    pred  = model_xg.predict_proba(x_test)[::,1]
-    score(y_test,pred)
-    pickle.dump(model_xg, open('model/model_xg.pkl', 'wb'))
 
-    mlflow.set_experiment('ML-tree')
-    model_xg = trainmodel_tree(x_train,y_train)
-    pred  = model_xg.predict_proba(x_test)[::,1]
-    score(y_test,pred)
-    pickle.dump(model_xg, open('model/model_tree.pkl', 'wb'))
+    params = dict(learning_rate=0.01,n_estimators=500,gamma=10,max_depth=20)
+    mlflow.log_params(params)
 
-    mlflow.set_experiment('ML-logis')
-    model_xg = trainmodel_logis(x_train,y_train)
-    pred  = model_xg.predict_proba(x_test)[::,1]
-    score(y_test,pred)
-    pickle.dump(model_xg, open('model/model_logis.pkl', 'wb'))
+    # Create pipeline
+    pipeline = make_pipeline(
+        DictVectorizer(sparse=True),
+        DataFrameToArrayTransformer(),
+        StandardScaler(),
+        xgboost.XGBClassifier(**params)
+    )
+    pipeline.fit(x_train,y_train)
+    pred =pipeline.predict_proba(x_test)[::,1]
+    sco,f1,fp,tp=  score(y_test,pred)
+
+    mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
+    mlflow.sklearn.log_model(pipeline,artifact_path='model' )
 
 if __name__ == '__main__':
     main()
