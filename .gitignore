@@ -1,0 +1,6 @@
+/data
+*pptx
+*ipynb
+coomand_script.py
+.env
+config

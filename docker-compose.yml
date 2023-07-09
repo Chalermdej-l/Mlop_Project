@@ -1,0 +1,59 @@
+version: "3.9"
+
+networks:
+  back-tier:
+  front-tier:
+  
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+
+    ports:
+      - "5432:5432"
+    networks:
+      - back-tier
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - back-tier
+      - front-tier  
+
+  # web:
+  #   restart: always
+  #   build: ./mlflow
+  #   image: mlflow_server
+  #   container_name: mlflow_server
+  #   depends_on:
+  #       - mc
+  #       - db
+  #   ports:
+  #       - "5000:5000"
+  #   environment:
+  #       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+  #       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+  #       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+  #   command: mlflow server --backend-store-uri mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE} --default-artifact-root s3://mlflow/ --host 0.0.0.0
+ 
+ 
+  # grafana:
+  #   image: grafana/grafana
+  #   user: "472"
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+  #     - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+  #     - ./dashboards:/opt/grafana/dashboards
+  #   networks:
+  #     - back-tier
+  #     - front-tier
+  #   restart: always

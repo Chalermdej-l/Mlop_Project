@@ -1,0 +1,10 @@
+# AWS IAM
+ACCESS_KEY = ''
+ACCESS_SCRECT =''
+AWS_DEFAULT_REGION=''
+
+S3_BUCKET = ''
+
+
+# Postgress
+DB_NAME = ''
