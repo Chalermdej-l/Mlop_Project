@@ -36,7 +36,7 @@ def clendata(df_main):
                                         8 if x>=360 and x<420 else  \
                                         9 if x>=420 and x<480 else  \
                                         10)  
-    df_main = df_main.drop(['y','id'],axis=1)
+    df_main = df_main.drop(['y','id','day_of_week','month'],axis=1)
 
     return df_main
 
@@ -102,7 +102,7 @@ def main():
                         sco,f1,fp,tp=  score(y_test,pred)
                         print('Logging para...')
                         mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
-                        mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
+                        mlflow.sklearn.lzzog_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
     print('Script done executing...')
 if __name__ == '__main__':
     main()
