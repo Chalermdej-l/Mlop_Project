@@ -10,14 +10,14 @@ services:
     restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASS_DB}
     volumes:
-      - ${volumn_path}:/var/lib/postgresql
-    ports:
-      - "5432:5432"
+      - ${VOLUMN_PATH}:/var/lib/postgresql/data
     networks:
       - back-tier
+    profiles: ["mlflow"]
+
 
   adminer:
     image: adminer
@@ -26,25 +26,38 @@ services:
       - "8080:8080"
     networks:
       - back-tier
-      - front-tier  
+    profiles: ["mlflow"]
 
-  # web:
-  #   restart: always
-  #   build: ./mlflow
-  #   image: mlflow_server
-  #   container_name: mlflow_server
-  #   depends_on:
-  #       - mc
-  #       - db
-  #   ports:
-  #       - "5000:5000"
-  #   environment:
-  #       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
-  #       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-  #       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-  #   command: mlflow server --backend-store-uri mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE} --default-artifact-root s3://mlflow/ --host 0.0.0.0
- 
- 
+  mlserver:
+    restart: always
+    image: mlflow
+    depends_on:
+        - db
+    ports:
+        - "5000:5000"    
+    networks:
+        - back-tier 
+
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${USER_DB}:${PASS_DB}@db:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET}
+    profiles: ["mlflow"]
+  
+  webapp:
+    restart: always
+    image: webapp
+    ports:
+        - "9696:9696"  
+    networks:
+      - front-tier
+    environment:
+        - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+        - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
+        - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+        - RUN_ID=${RUN_ID}
+        - S3_BUCKET=${S3_BUCKET}
+        - EXPERIMENT_ID=${EXPERIMENT_ID}
+    command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
+    profiles: ["webapp"]
+    
   # grafana:
   #   image: grafana/grafana
   #   user: "472"

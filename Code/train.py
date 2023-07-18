@@ -10,7 +10,6 @@ import pandas as pd
 from  helper import DataFrameToArrayTransformer
 
 mlflow.set_tracking_uri('http://127.0.0.1:5000')
-# mlflow.autolog()
 
 @task(retries=3)
 def getdata():
@@ -27,7 +26,18 @@ def clendata(df_main):
                                             4 if x>=47 and x<60 else  \
                                             5 if x>=60 and x<90 else  \
                                             6)
-    df_main = df_main.drop(['y'],axis=1)
+    df_main['duration'] = df_main['duration'].apply(lambda x :  1 if x >=0 and x<30 else  \
+                                        2 if x>=30 and x<60 else  \
+                                        3 if x>=60 and x<120 else  \
+                                        4 if x>=120 and x<180 else  \
+                                        5 if x>=180 and x<240 else  \
+                                        6 if x>=240 and x<300 else  \
+                                        7 if x>=300 and x<360 else  \
+                                        8 if x>=360 and x<420 else  \
+                                        9 if x>=420 and x<480 else  \
+                                        10)  
+    df_main = df_main.drop(['y','id'],axis=1)
+
     return df_main
 
 
@@ -51,9 +61,11 @@ def trainmodel_xgb(x_train,y_train):
 
 @flow
 def main():
+    print('Script Executing...')
     df_main = getdata()
     df_main = clendata(df_main)
 
+    print('Spliting data...')
     train_df,test_df = train_test_split(df_main,test_size=0.3,random_state=1)
 
     # Split data
@@ -62,25 +74,35 @@ def main():
     x_test = test_df.drop([ 'y_int'],axis=1).to_dict(orient='records')
     y_test = test_df['y_int']
 
+    print('Traning model...')
     # Train model
     mlflow.set_experiment('ML-xgb')
+    para_lr = [0.1,0.01,0.001]
+    para_depth = [5,10,15,20,25]
+    para_gamma = [1,5,10,15,20]
+    para_n= [100,200,300,400,500,600]
+    for lr in para_lr:
+        for depth in para_depth:
+            for gamma in para_gamma:
+                for n in para_n: 
+                    with mlflow.start_run():                                   
+                        params = dict(learning_rate=lr,n_estimators=n,gamma=gamma,max_depth=depth)
+                        print(params)
+                        mlflow.log_params(params)
 
-    params = dict(learning_rate=0.01,n_estimators=500,gamma=10,max_depth=20)
-    mlflow.log_params(params)
-
-    # Create pipeline
-    pipeline = make_pipeline(
-        DictVectorizer(sparse=True),
-        DataFrameToArrayTransformer(),
-        StandardScaler(),
-        xgboost.XGBClassifier(**params)
-    )
-    pipeline.fit(x_train,y_train)
-    pred =pipeline.predict_proba(x_test)[::,1]
-    sco,f1,fp,tp=  score(y_test,pred)
-
-    mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
-    mlflow.sklearn.log_model(pipeline,artifact_path='model' )
-
+                        # Create pipeline
+                        pipeline = make_pipeline(
+                            DictVectorizer(sparse=True),
+                            DataFrameToArrayTransformer(),
+                            StandardScaler(),
+                            xgboost.XGBClassifier(**params)
+                        )
+                        pipeline.fit(x_train,y_train)
+                        pred =pipeline.predict_proba(x_test)[::,1]
+                        sco,f1,fp,tp=  score(y_test,pred)
+                        print('Logging para...')
+                        mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
+                        mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
+    print('Script done executing...')
 if __name__ == '__main__':
     main()

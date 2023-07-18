@@ -5,3 +5,4 @@ coomand_script.py
 .env
 config
 /model
+/db
