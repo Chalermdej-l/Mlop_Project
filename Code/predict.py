@@ -2,6 +2,8 @@ import logging
 import mlflow
 import os
 import datetime
+import psycopg
+import datetime
 from waitress import serve
 from flask import Flask, request, jsonify
 
@@ -16,6 +18,18 @@ def getmodel():
     model = mlflow.sklearn.load_model(path)
     return model
 
+def saverequest(datas):
+    DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
+    current_time = datetime.datetime.today()
+    query= """
+    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """
+    with psycopg.connect(f"host='172.19.0.4' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
+        for data in datas:
+            data['timestamp'] = current_time
+            con.execute(query,tuple(data.values()))            
+    con.close()
+    return None
 def convertdata(data):
     for i in data:
         # Convert age variable
@@ -75,7 +89,12 @@ def main():
 
     logging.info('Predicting...')
     pred_result = predict(model,data)
+    
     result = preparerespond(pred_result,request_data,version)
+
+    logging.info('Logging data...')
+    saverequest(request_data)
+
 
     logging.info('Done executing...')
     return jsonify(result)

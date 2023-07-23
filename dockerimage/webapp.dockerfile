@@ -1,6 +1,8 @@
 FROM python:3.7-slim-buster
 
-RUN pip install flask mlflow waitress boto3 botocore scikit-learn 
+COPY requirement/Requirement-web.txt .
+
+RUN pip install -r  Requirement-web.txt
 
 RUN pip install xgboost
 

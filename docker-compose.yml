@@ -6,6 +6,7 @@ networks:
   
 services:
   db:
+    container_name: mldb
     image: postgres
     restart: always
     environment:
@@ -17,7 +18,7 @@ services:
     networks:
       - back-tier
     profiles: ["mlflow"]
-
+    command: postgres -c listen_addresses='*'
 
   adminer:
     image: adminer
@@ -55,9 +56,39 @@ services:
         - RUN_ID=${RUN_ID}
         - S3_BUCKET=${S3_BUCKET}
         - EXPERIMENT_ID=${EXPERIMENT_ID}
+        - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
     command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
     profiles: ["webapp"]
-    
+  
+  db-grafana:
+    container_name: monitordb
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB:  ${DB_NAME_GRAFANA}
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASS_DB}
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    volumes:
+      - ${VOLUMN_PATH_MONITOR}:/var/lib/postgresql/data
+      - ${VOLUMN_PATH_SCRIPT}:/docker-entrypoint-initdb.d/create_tables.sql
+    networks:
+      - front-tier
+    profiles: ["webapp"]
+    command: postgres -c listen_addresses='*'
+
+  adminer-grafana:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - front-tier
+    profiles: ["webapp"]
+
   # grafana:
   #   image: grafana/grafana
   #   user: "472"

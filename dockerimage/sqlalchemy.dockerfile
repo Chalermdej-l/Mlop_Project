@@ -1,3 +1,5 @@
 FROM python:3.7-slim-buster
 
-RUN pip install mlflow psycopg2-binary SQLAlchemy
+COPY requirement/Requirement-ml.txt .
+
+RUN pip install -r  Requirement-ml.txt

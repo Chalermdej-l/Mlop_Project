@@ -77,10 +77,10 @@ def main():
     print('Traning model...')
     # Train model
     mlflow.set_experiment('ML-xgb')
-    para_lr = [0.1,0.01,0.001]
-    para_depth = [5,10,15,20,25]
-    para_gamma = [1,5,10,15,20]
-    para_n= [100,200,300,400,500,600]
+    para_lr = [0.1,0.01]
+    para_depth = [5,15,25]
+    para_gamma = [1,10,20]
+    para_n= [100,300,600]
     for lr in para_lr:
         for depth in para_depth:
             for gamma in para_gamma:
@@ -102,7 +102,7 @@ def main():
                         sco,f1,fp,tp=  score(y_test,pred)
                         print('Logging para...')
                         mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
-                        mlflow.sklearn.lzzog_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
+                        mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
     print('Script done executing...')
 if __name__ == '__main__':
     main()
