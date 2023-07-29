@@ -20,7 +20,7 @@ s3list:
 
 s3delete:
 	aws s3 rb s3://${S3_BUCKET} --force
-
+	aws s3 rb s3://${S3_BUCKET_DATA} --force
 # Docker 
 dockerupml:
 	docker-compose --profile mlflow up --detach 
@@ -38,7 +38,7 @@ dockerdownweb:
 	docker compose -f docker-compose.yml --profile webapp down
 
 dockerdownml:
-	docker compose -f docker-compose.yml --profile webapp down
+	docker compose -f docker-compose.yml --profile mlflow down
 
 dockercreate:
 	# docker build -f dockerfile -t mlflow .

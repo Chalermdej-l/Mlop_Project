@@ -18,15 +18,16 @@ def getmodel():
     model = mlflow.sklearn.load_model(path)
     return model
 
-def saverequest(datas):
+def saverequest(datas,predict):
     DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
     current_time = datetime.datetime.today()
     query= """
-    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """
-    with psycopg.connect(f"host='172.19.0.4' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
-        for data in datas:
+    with psycopg.connect(f"host='172.20.0.3' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
+        for i,data in enumerate(datas):
             data['timestamp'] = current_time
+            data['prediction'] = int(predict[i])
             con.execute(query,tuple(data.values()))            
     con.close()
     return None
@@ -93,7 +94,7 @@ def main():
     result = preparerespond(pred_result,request_data,version)
 
     logging.info('Logging data...')
-    saverequest(request_data)
+    saverequest(request_data,pred_result)
 
 
     logging.info('Done executing...')

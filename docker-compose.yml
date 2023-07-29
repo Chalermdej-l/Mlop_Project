@@ -89,16 +89,16 @@ services:
       - front-tier
     profiles: ["webapp"]
 
-  # grafana:
-  #   image: grafana/grafana
-  #   user: "472"
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - ./config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
-  #     - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
-  #     - ./dashboards:/opt/grafana/dashboards
-  #   networks:
-  #     - back-tier
-  #     - front-tier
-  #   restart: always
+  grafana:
+    image: grafana/grafana
+    user: "472"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./dashboards:/opt/grafana/dashboards
+    networks:
+      - front-tier
+    restart: always
+    profiles: ["webapp"]
