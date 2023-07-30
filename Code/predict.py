@@ -20,11 +20,12 @@ def getmodel():
 
 def saverequest(datas,predict):
     DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
+    IP_MONITOR = os.getenv('IP_MONITOR','172.18.0.2')
     current_time = datetime.datetime.today()
     query= """
     insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """
-    with psycopg.connect(f"host='172.20.0.3' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
+    with psycopg.connect(f"host={IP_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
         for i,data in enumerate(datas):
             data['timestamp'] = current_time
             data['prediction'] = int(predict[i])

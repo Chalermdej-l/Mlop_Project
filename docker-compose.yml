@@ -2,7 +2,8 @@ version: "3.9"
 
 networks:
   back-tier:
-  front-tier:
+  front-tier:    
+  monitor-tier:
   
 services:
   db:
@@ -18,7 +19,7 @@ services:
     networks:
       - back-tier
     profiles: ["mlflow"]
-    command: postgres -c listen_addresses='*'
+
 
   adminer:
     image: adminer
@@ -28,7 +29,8 @@ services:
     networks:
       - back-tier
     profiles: ["mlflow"]
-
+    depends_on:
+        - db
   mlserver:
     restart: always
     image: mlflow
@@ -57,19 +59,20 @@ services:
         - S3_BUCKET=${S3_BUCKET}
         - EXPERIMENT_ID=${EXPERIMENT_ID}
         - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
+        - IP_MONITOR=${IP_MONITOR}
     command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
+    depends_on: 
+      - db-grafana
     profiles: ["webapp"]
   
   db-grafana:
     container_name: monitordb
-    image: postgres
+    image: postgres:15.3
     restart: always
     environment:
       POSTGRES_DB:  ${DB_NAME_GRAFANA}
       POSTGRES_USER: ${USER_DB}
       POSTGRES_PASSWORD: ${PASS_DB}
-    expose:
-      - 5432
     ports:
       - 5432:5432
     volumes:
@@ -77,8 +80,9 @@ services:
       - ${VOLUMN_PATH_SCRIPT}:/docker-entrypoint-initdb.d/create_tables.sql
     networks:
       - front-tier
-    profiles: ["webapp"]
-    command: postgres -c listen_addresses='*'
+      - monitor-tier
+    profiles: ["webapp","monitor"]
+
 
   adminer-grafana:
     image: adminer
@@ -86,8 +90,11 @@ services:
     ports:
       - "8081:8080"
     networks:
+      - monitor-tier
       - front-tier
-    profiles: ["webapp"]
+    depends_on: 
+      - db-grafana
+    profiles: ["webapp","monitor"]
 
   grafana:
     image: grafana/grafana
@@ -95,10 +102,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
-      - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      # - ./config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./dashboards:/opt/grafana/dashboards
     networks:
-      - front-tier
+      - monitor-tier
     restart: always
-    profiles: ["webapp"]
+    profiles: ["monitor"]
+    depends_on: 
+      - db-grafana

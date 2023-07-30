@@ -10,7 +10,7 @@ from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMiss
 
 DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
 S3_BUCKET = os.getenv('S3_BUCKET_DATA','mlop-data')    
-
+IP_MONITOR = os.getenv('IP_MONITOR','172.18.0.2')
 def getrefdata():
     path = f's3://{S3_BUCKET}/bank-additional-full.csv'
     reference_df = pd.read_csv(path,sep=';')

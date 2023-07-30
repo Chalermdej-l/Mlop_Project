@@ -35,10 +35,13 @@ dockerdown:
 	docker-compose down --remove-orphans
 
 dockerdownweb:
-	docker compose -f docker-compose.yml --profile webapp down
+	docker-compose -f docker-compose.yml --profile webapp down
+
+dockerdownmoni:
+	docker-compose -f docker-compose.yml --profile monitor down
 
 dockerdownml:
-	docker compose -f docker-compose.yml --profile mlflow down
+	docker-compose -f docker-compose.yml --profile mlflow down
 
 dockercreate:
 	# docker build -f dockerfile -t mlflow .
