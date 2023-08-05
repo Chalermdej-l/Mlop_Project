@@ -34,14 +34,18 @@ services:
   mlserver:
     restart: always
     image: mlflow
+    environment:
+      - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      
     depends_on:
         - db
     ports:
         - "5000:5000"    
     networks:
         - back-tier 
-
-    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${USER_DB}:${PASS_DB}@db:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET}
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${USER_DB}:${PASS_DB}@db:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET} 
     profiles: ["mlflow"]
   
   webapp:
