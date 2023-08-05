@@ -67,5 +67,7 @@ getdata:
 	aws s3 mb s3://${S3_BUCKET_DATA}
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
+
+
 mlup:
 	mlflow server --backend-store-uri postgresql://root:root@127.0.0.1:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET}
