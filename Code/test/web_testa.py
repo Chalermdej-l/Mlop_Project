@@ -12,5 +12,6 @@ sample_data =[
 url = 'http://127.0.0.1:9696/predict'
 result=  requests.post(url,json=sample_data)
 
+assert result.status_code == 200
 print(result.status_code)
 print(result.json())

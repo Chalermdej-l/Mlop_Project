@@ -56,7 +56,7 @@ train:
 	python code/train.py
 
 testweb:
-	python test/testweb.py
+	python code/test/web_test.py
 
 # Other
 # https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing?select=bank-additional-full.csv

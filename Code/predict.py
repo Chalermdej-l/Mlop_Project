@@ -18,9 +18,9 @@ def getmodel():
     model = mlflow.sklearn.load_model(path)
     return model
 
-def saverequest(datas,predict):
+def save_request(datas,predict):
     DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
-    IP_MONITOR = os.getenv('IP_MONITOR','172.18.0.2')
+    IP_MONITOR = os.getenv('IP_WEB','172.21.0.2')
     current_time = datetime.datetime.today()
     query= """
     insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
@@ -32,6 +32,7 @@ def saverequest(datas,predict):
             con.execute(query,tuple(data.values()))            
     con.close()
     return None
+
 def convertdata(data):
     for i in data:
         # Convert age variable
@@ -95,7 +96,7 @@ def main():
     result = preparerespond(pred_result,request_data,version)
 
     logging.info('Logging data...')
-    saverequest(request_data,pred_result)
+    save_request(request_data,pred_result)
 
 
     logging.info('Done executing...')
