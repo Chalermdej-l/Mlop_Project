@@ -43,7 +43,6 @@ dockerdownml:
 	docker-compose -f docker-compose.yml --profile mlflow down
 
 dockercreate:
-	# docker build -f dockerfile -t mlflow .
 	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
 	docker build -f dockerimage/webapp.dockerfile -t webapp .
 
@@ -60,9 +59,13 @@ infra-down:
 
 infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
+	DB_HOSTML=$(terraform output -state=infra/terraform.tfstate rds_endpoint_ml)
+	DB_HOSTMONI=$(terraform output -state=infra/terraform.tfstate rds_endpoint_moni)
+	python infra/code/createtable.py ${DB_NAME_MONI} ${DB_USERNAME} ${DB_PASSWORD} ${DB_NAME_MONI} ${DB_HOSTMONI} 5432
 
-
-
+infra-prep:
+	test= echo $$(terraform output -state=infra/terraform.tfstate rds_endpoint_ml)
+	test2= echo $$(terraform output -state=infra/terraform.tfstate rds_endpoint_moni)
 # Script
 train:
 	python code/train.py
