@@ -5,6 +5,7 @@ networks:
   front-tier:    
   monitor-tier:
   
+# Local deployment
 services:
   db:
     container_name: mldb
@@ -115,3 +116,4 @@ services:
     profiles: ["monitor"]
     depends_on: 
       - db-grafana
+

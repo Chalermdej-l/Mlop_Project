@@ -7,3 +7,8 @@ config
 /model
 /db
 /Experiment
+*tfstate
+*tfvars
+*backup
+*exe
+*hcl

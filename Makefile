@@ -2,9 +2,7 @@ include .env
 
 # AWS command
 awssetup:
-	export ACCESS_KEY=${ACCESS_KEY}
-	export ACCESS_SCRECT=${ACCESS_SCRECT}
-	export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+	aws configure
 
 s3create:
 	aws s3 mb s3://${S3_BUCKET}
@@ -21,6 +19,7 @@ s3list:
 s3delete:
 	aws s3 rb s3://${S3_BUCKET} --force
 	aws s3 rb s3://${S3_BUCKET_DATA} --force
+
 # Docker 
 dockerupml:
 	docker-compose --profile mlflow up --detach 
@@ -50,6 +49,19 @@ dockercreate:
 
 dockerprune:
 	docker system prune --force
+
+# Terraform
+infra-setup:
+	terraform -chdir=./infra init 
+	terraform -chdir=./infra plan -var-file=variables.tfvars
+
+infra-down:
+	terraform -chdir=./infra destroy -var-file=variables.tfvars -auto-approve
+
+infra-create:
+	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
+
+
 
 # Script
 train:
