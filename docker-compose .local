@@ -5,36 +5,50 @@ networks:
   front-tier:    
   monitor-tier:
   
-# Cloud deployment
-services:  
+# Local deployment
+services:
+  db:
+    container_name: mldb
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASS_DB}
+    volumes:
+      - ${VOLUMN_PATH}:/var/lib/postgresql/data
+    networks:
+      - back-tier
+    profiles: ["mlflow"]
+
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - back-tier
+    profiles: ["mlflow"]
+    depends_on:
+        - db
   mlserver:
     restart: always
     image: mlflow
     environment:
       - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
       - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}      
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      
+    depends_on:
+        - db
     ports:
         - "5000:5000"    
     networks:
         - back-tier 
     command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${USER_DB}:${PASS_DB}@db:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET} 
     profiles: ["mlflow"]
-
-  agent:
-    image: python_prefect_agent
-    restart: always
-
-    environment:
-      - PREFECT_API_URL=${Prefect_API_Login}
-      - PREFECT_API_KEY=${Prefect_API_KEY}
-      - S3_BUCKET =${S3_BUCKET_DATA}
-      - MLFLOW_URI =${MLFLOW_URI}
-    profiles: ["mlflow"]
-    command: bash -c "python train.py && prefect agent start -q default"
-
-
-
+  
   webapp:
     restart: always
     image: webapp
@@ -52,8 +66,40 @@ services:
         - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
         - IP_WEB=${IP_WEB}
     command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
-    profiles: ["webapp"]  
+    depends_on: 
+      - db-grafana
+    profiles: ["webapp"]
+  
+  db-grafana:
+    container_name: monitordb
+    image: postgres:15.3
+    restart: always
+    environment:
+      POSTGRES_DB:  ${DB_NAME_GRAFANA}
+      POSTGRES_USER: ${USER_DB}
+      POSTGRES_PASSWORD: ${PASS_DB}
+    ports:
+      - 5432:5432
+    volumes:
+      - ${VOLUMN_PATH_MONITOR}:/var/lib/postgresql/data
+      - ${VOLUMN_PATH_SCRIPT}:/docker-entrypoint-initdb.d/create_tables.sql
+    networks:
+      - front-tier
+      - monitor-tier
+    profiles: ["webapp","monitor"]
 
+
+  adminer-grafana:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - monitor-tier
+      - front-tier
+    depends_on: 
+      - db-grafana
+    profiles: ["webapp","monitor"]
 
   grafana:
     image: grafana/grafana
@@ -68,3 +114,6 @@ services:
       - monitor-tier
     restart: always
     profiles: ["monitor"]
+    depends_on: 
+      - db-grafana
+

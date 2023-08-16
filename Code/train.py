@@ -1,4 +1,6 @@
 from prefect import flow,task
+from prefect.orion.schemas.schedules import CronSchedule
+from prefect.deployments import Deployment
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_curve,accuracy_score,f1_score,auc
 from sklearn.feature_extraction import DictVectorizer
@@ -8,14 +10,18 @@ import xgboost
 import mlflow
 import pandas as pd
 from  helper import DataFrameToArrayTransformer
+import os 
 
-mlflow.set_tracking_uri('http://127.0.0.1:5000')
+S3_BUCKET = os.getenv('S3_BUCKET_DATA','mlop-data')    
+MLFLOW_URI = os.getenv('MLFLOW_URI')
+
+mlflow.set_tracking_uri(MLFLOW_URI)
 
 @task(retries=3)
 def getdata():
-    df_main = pd.read_csv('data/bank-additional-full.csv',sep=";")
-
-    return df_main
+    path = f's3://{S3_BUCKET}/bank-additional-full.csv'
+    reference_df = pd.read_csv(path,sep=';')
+    return reference_df
 
 @task
 def clendata(df_main):
@@ -105,4 +111,9 @@ def main():
                         mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
     print('Script done executing...')
 if __name__ == '__main__':
-    main()
+    deployment = Deployment.build_from_flow(
+        flow=main,
+        name="MLOP-TrainML",
+        schedule=(CronSchedule(cron="0 6 5 * *"))
+    )
+    deployment.apply()

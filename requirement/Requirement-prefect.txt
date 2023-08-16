@@ -1,0 +1,7 @@
+python-dotenv
+scikit-learn
+prefect
+xgboost
+pandas
+mlflow
+

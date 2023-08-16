@@ -45,6 +45,7 @@ dockerdownml:
 dockercreate:
 	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
 	docker build -f dockerimage/webapp.dockerfile -t webapp .
+	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f dockerimage/prefect.dockerfile -t python_prefect_agent .
 
 dockerprune:
 	docker system prune --force
@@ -59,13 +60,10 @@ infra-down:
 
 infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
-	DB_HOSTML=$(terraform output -state=infra/terraform.tfstate rds_endpoint_ml)
-	DB_HOSTMONI=$(terraform output -state=infra/terraform.tfstate rds_endpoint_moni)
-	python infra/code/createtable.py ${DB_NAME_MONI} ${DB_USERNAME} ${DB_PASSWORD} ${DB_NAME_MONI} ${DB_HOSTMONI} 5432
 
 infra-prep:
-	test= echo $$(terraform output -state=infra/terraform.tfstate rds_endpoint_ml)
-	test2= echo $$(terraform output -state=infra/terraform.tfstate rds_endpoint_moni)
+	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
+
 # Script
 train:
 	python code/train.py
@@ -82,7 +80,23 @@ getdata:
 	aws s3 mb s3://${S3_BUCKET_DATA}
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
-
-
 mlup:
 	mlflow server --backend-store-uri postgresql://root:root@127.0.0.1:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET}
+
+prefectlogin:
+	prefect cloud login --key ${Prefect_API_KEY} --workspace ${Prefect_Workspace}
+
+# Need to execute manual
+docker-awspush:
+	aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.mlflow_repro.registry_id}.dkr.ecr.ap-southeast-1.amazonaws.com
+	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:mlflow
+	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:webapp
+	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:python_prefect_agent
+
+	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:mlflow
+	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:webapp
+	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:python_prefect_agent
+db-endpiont:
+	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
+	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
+

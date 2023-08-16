@@ -8,9 +8,13 @@ from evidently.report import Report
 from evidently import ColumnMapping
 from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMissingValuesMetric,DataDriftTable
 
-DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
+DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA')
 S3_BUCKET = os.getenv('S3_BUCKET_DATA','mlop-data')    
-IP_MONITOR = os.getenv('IP_MONITOR','172.18.0.2')
+IP_MONITOR = os.getenv('IP_MONITOR')
+AWS_DB_MONITOR = os.getenv('AWS_DB_MONITOR')
+AWS_USER_DB = os.getenv('AWS_USER_DB')
+AWS_PASS_DB = os.getenv('AWS_PASS_DB')
+
 def getrefdata():
     path = f's3://{S3_BUCKET}/bank-additional-full.csv'
     reference_df = pd.read_csv(path,sep=';')
@@ -24,7 +28,7 @@ def getlogdata():
     query= """
     select * from user_log;
     """
-    with psycopg.connect(f"host='localhost' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
+    with psycopg.connect(f"host={AWS_DB_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user={AWS_USER_DB} password={AWS_PASS_DB}", autocommit=True) as con:
         receive_df = pd.read_sql_query(query, con)
     con.close()
     receive_df.drop(['id','datestamp'],inplace=True,axis=1)
