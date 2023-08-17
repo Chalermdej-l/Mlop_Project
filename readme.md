@@ -13,9 +13,7 @@ Utilizing the [Bank Marketing](https://www.kaggle.com/datasets/henriqueyamahata/
   - [(3) Monitor the Model](#3-monitor-the-model)
 - [Reproducibility](#reproducibility)
 - [Usage](#usage)
-- [Contributing](#contributing)
-- [License](#license)
-
+- [Further Improvements](#further-improvements)
 ## Problem Statement
 Traditionally, reaching out to customers to gauge their interest in a bank term deposit involves resource-intensive methods such as individual phone calls. With the vast number of customer accounts, this approach proves time-consuming and inefficient. To address this challenge and optimize the allocation of resources and time, we propose a Machine Learning solution. By training the model on historical customer data, including information gathered during the account creation process, and leveraging insights from previous marketing campaigns, we aim to predict whether a customer is likely to respond positively or negatively to a term deposit offer. This predictive capability empowers stakeholders to strategically target the most receptive audience, enhancing the efficacy of marketing campaigns.
 
@@ -69,3 +67,4 @@ This enhanced project flow captures the steps involved in data handling, model t
 
 ## Usage
 
+## Further Improvements
