@@ -64,13 +64,27 @@ infra-create:
 infra-prep:
 	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
 
+infra-key:
+	terraform output -state=infra/terraform.tfstate private_key_pem > key/private.pem
+	terraform output -state=infra/terraform.tfstate public_key_openssh > key/public.txt
+
+# vm
+vm-connect:
+	ssh -i key/private.pem ec2-user@${DBS_ENDPOINT}
+
+vm-copy:
+	scp -i key/private.pem -r ./requirement ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/requirement
+	scp -i key/private.pem -r ./code ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/code
+	scp -i key/private.pem -r ./dockerimage ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/dockerimage
+	scp -i key/private.pem -r ./.env ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/.env
+	scp -i key/private.pem -r ./docker-compose.yml ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/docker-compose.yml
 # Script
 train:
 	python code/train.py
 
 testweb:
 	python code/test/web_test.py
-
+scp -i key/private.pem -r test.py ec2-user@ec2-175-41-186-206.ap-southeast-1.compute.amazonaws.com:/home/ec2-user/proj
 # Other
 # https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing?select=bank-additional-full.csv
 # Prerequisite: Have an kaggle account + key.json download < Kaggle key might expire need to regen first
@@ -92,13 +106,8 @@ docker-awspush:
 	regis_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_registry_url) | tr -d '"')
 	region="ap-southeast-1"
 	aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${regis_url}.dkr.ecr.${region}.amazonaws.com"
-	docker tag mlflow:latest ${repo_url}:mlflow
 	docker tag webapp:latest ${repo_url}:webapp
-	docker tag python_prefect_agent:latest ${repo_url}:python_prefect_agent
-
-	docker push ${repo_url}:mlflow
 	docker push ${repo_url}:webapp
-	docker push ${repo_url}:python_prefect_agent
 
 db-endpiont:
 	terraform output -state=infra/terraform.tfstate rds_endpoint_ml

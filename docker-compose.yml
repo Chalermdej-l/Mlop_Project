@@ -18,22 +18,30 @@ services:
         - "5000:5000"    
     networks:
         - back-tier 
-    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${USER_DB}:${PASS_DB}@db:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET} 
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${AWS_USER_DB}:${AWS_PASS_DB}@${AWS_DB_ML}:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET} 
     profiles: ["mlflow"]
 
   agent:
     image: python_prefect_agent
     restart: always
-
+    networks:
+        - back-tier 
     environment:
+      - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}  
+      - AWS_DB_MONITOR = ${AWS_DB_MONITOR}
+      - AWS_USER_DB = ${AWS_USER_DB}
+      - AWS_PASS_DB = ${AWS_PASS_DB} 
       - PREFECT_API_URL=${Prefect_API_Login}
       - PREFECT_API_KEY=${Prefect_API_KEY}
       - S3_BUCKET =${S3_BUCKET_DATA}
       - MLFLOW_URI =${MLFLOW_URI}
+      - DB_NAME_GRAFANA = ${DB_NAME_GRAFANA}
+      - IP_MONITOR = ${IP_MONITOR}
     profiles: ["mlflow"]
-    command: bash -c "python train.py && prefect agent start -q default"
-
-
+    depends_on: ['mlserver']
+    command: bash -c "python train.py && python monitor.py && prefect agent start -q default"
 
   webapp:
     restart: always

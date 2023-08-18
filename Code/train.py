@@ -47,7 +47,7 @@ def clendata(df_main):
     return df_main
 
 
-@task
+@task(log_prints=True)
 def score(y_test,y_pred):
     score = accuracy_score(y_test,y_pred.round())
     f1 = f1_score(y_test,y_pred.round())
@@ -65,7 +65,7 @@ def trainmodel_xgb(x_train,y_train):
 
     return xgb
 
-@flow
+@flow(log_prints=True)
 def main():
     print('Script Executing...')
     df_main = getdata()
@@ -108,7 +108,7 @@ def main():
                         sco,f1,fp,tp=  score(y_test,pred)
                         print('Logging para...')
                         mlflow.log_metrics({'score':sco,'f1':f1,'fp':fp,'tp':tp})
-                        mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['code/helper.py'])
+                        mlflow.sklearn.log_model(pipeline,artifact_path='model',code_paths=['helper.py'])
     print('Script done executing...')
 if __name__ == '__main__':
     deployment = Deployment.build_from_flow(

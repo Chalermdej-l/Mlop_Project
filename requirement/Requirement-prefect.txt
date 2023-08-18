@@ -4,4 +4,9 @@ prefect
 xgboost
 pandas
 mlflow
-
+s3fs
+evidently
+psycopg
+psycopg[binary]
+boto3
+botocore

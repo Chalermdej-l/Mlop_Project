@@ -3,6 +3,7 @@ FROM  prefecthq/prefect:2.8.7-python3.11
 COPY requirement/Requirement-prefect.txt .
 COPY code/train.py .
 COPY code/helper.py .
+COPY code/monitor.py .
 
 ARG Prefect_API_KEY
 ARG Prefect_Workspace

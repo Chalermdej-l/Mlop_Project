@@ -1,5 +1,8 @@
 import warnings
 warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
+from prefect import flow,task
+from prefect.orion.schemas.schedules import CronSchedule
+from prefect.deployments import Deployment
 import pandas as pd
 import psycopg
 import os
@@ -34,6 +37,7 @@ def getlogdata():
     receive_df.drop(['id','datestamp'],inplace=True,axis=1)
     return receive_df
 
+@task
 def genmetric(reference_df,receive_df):
     num_features = ['pdays' ,'emprate', 'priceidx', 'confidx', 'euribor3m', 'employed']
     cat_features =  ['age', 'job', 'marital', 'education', 'default_bool', 'housing', 'loan','contact', 'duration', 'campaign', 'previous', 'poutcome']
@@ -66,6 +70,7 @@ def writedata(record):
         sql = con.execute(query,record)
     return None
 
+@flow(log_prints=True)
 def getmonitor():
     print('Getting reference data...')
     reference_df = getrefdata()
@@ -78,4 +83,9 @@ def getmonitor():
     print('Finish running script.')
 
 if __name__ == '__main__':
-    getmonitor()
+    deployment = Deployment.build_from_flow(
+        flow=getmonitor,
+        name="MLOP-MonitorML",
+        schedule=(CronSchedule(cron="0 22 * * *"))
+    )
+    deployment.apply()
