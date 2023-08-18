@@ -88,15 +88,18 @@ prefectlogin:
 
 # Need to execute manual
 docker-awspush:
-	aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.mlflow_repro.registry_id}.dkr.ecr.ap-southeast-1.amazonaws.com
-	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:mlflow
-	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:webapp
-	docker tag mlflow:latest ${aws_ecr_repository.mlflow_repro.repository_url}:python_prefect_agent
+	repo_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_repo_url) | tr -d '"')
+	regis_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_registry_url) | tr -d '"')
+	region="ap-southeast-1"
+	aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${regis_url}.dkr.ecr.${region}.amazonaws.com"
+	docker tag mlflow:latest ${repo_url}:mlflow
+	docker tag webapp:latest ${repo_url}:webapp
+	docker tag python_prefect_agent:latest ${repo_url}:python_prefect_agent
 
-	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:mlflow
-	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:webapp
-	docker push ${aws_ecr_repository.mlflow_repro.repository_url}:python_prefect_agent
+	docker push ${repo_url}:mlflow
+	docker push ${repo_url}:webapp
+	docker push ${repo_url}:python_prefect_agent
+
 db-endpiont:
 	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
 	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
-
