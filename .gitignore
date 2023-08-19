@@ -13,3 +13,5 @@ config
 *exe
 *hcl
 /key
+.env *
+output.json

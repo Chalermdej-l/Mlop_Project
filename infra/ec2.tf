@@ -2,10 +2,11 @@
 resource "tls_private_key" "generated_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
+
 }
 
 resource "aws_key_pair" "mlop_keypair" {
-  key_name   = "example-keypair"
+  key_name   = "mlop-keypair"
   public_key = tls_private_key.generated_key.public_key_openssh
 }
 
@@ -29,13 +30,15 @@ resource "aws_security_group" "instance_sg" {
 }
 
 resource "aws_instance" "ec2_instance" {
-  ami           = "ami-091a58610910a87a9"
+  ami           = "ami-002843b0a9e09324a"
   instance_type = "t2.micro"
 
   key_name      = aws_key_pair.mlop_keypair.key_name  # Use the created key pair
 
   security_groups = [aws_security_group.instance_sg.name]
-
+  root_block_device {
+    volume_size = 20  # Set the desired storage size in GB
+  }
   tags = {
     Name = "MLop-projectserver"
   }

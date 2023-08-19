@@ -13,7 +13,6 @@ from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMiss
 
 DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA')
 S3_BUCKET = os.getenv('S3_BUCKET_DATA','mlop-data')    
-IP_MONITOR = os.getenv('IP_MONITOR')
 AWS_DB_MONITOR = os.getenv('AWS_DB_MONITOR')
 AWS_USER_DB = os.getenv('AWS_USER_DB')
 AWS_PASS_DB = os.getenv('AWS_PASS_DB')
@@ -66,7 +65,7 @@ def writedata(record):
     query= '''
     insert into monitor_log(time_stamp, drift_score, drift_col, missing_val,share_drift) values (%s, %s, %s, %s, %s)
     '''
-    with psycopg.connect(f"host='localhost' dbname={DB_NAME_GRAFANA} port=5432 user=root password=root", autocommit=True) as con:
+    with psycopg.connect(f"host={AWS_DB_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user={AWS_USER_DB} password={AWS_PASS_DB}", autocommit=True) as con:
         sql = con.execute(query,record)
     return None
 

@@ -1,5 +1,10 @@
 include .env
 
+MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlop_project-mlserver-1)
+DBS_ENDPOINT=$(shell terraform output -state=infra/terraform.tfstate instance_dns_name)
+AWS_DB_ML=$(shell terraform output -state=infra/terraform.tfstate rds_endpoint_ml | tr -d ':5432')
+AWS_DB_MONITOR=$(shell terraform output -state=infra/terraform.tfstate rds_endpoint_moni | tr -d ':5432')
+
 # AWS command
 awssetup:
 	aws configure
@@ -21,9 +26,16 @@ s3delete:
 	aws s3 rb s3://${S3_BUCKET_DATA} --force
 
 # Docker 
-dockerupml:
+dockerupmlserver:
 	docker-compose --profile mlflow up --detach 
 
+dockerupagent:
+	DBS_ENDPOINT=$(DBS_ENDPOINT) AWS_DB_ML=$(AWS_DB_ML) AWS_DB_MONITOR=$(AWS_DB_MONITOR) MLFLOW_URI="http://$(MLFLOW_URI):5000" docker-compose --profile mlflow-agent up --detach 
+
+dockerupml:
+	make dockerupmlserver
+	make dockerupagent
+	
 dockerupweb:
 	docker-compose --profile webapp up --detach 
 
@@ -41,10 +53,13 @@ dockerdownmoni:
 
 dockerdownml:
 	docker-compose -f docker-compose.yml --profile mlflow down
+	docker-compose -f docker-compose.yml --profile mlflow-agent down
 
-dockercreate:
-	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
+dockercreate-web:
 	docker build -f dockerimage/webapp.dockerfile -t webapp .
+	
+dockercreate-back:
+	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
 	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f dockerimage/prefect.dockerfile -t python_prefect_agent .
 
 dockerprune:
@@ -65,26 +80,32 @@ infra-prep:
 	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
 
 infra-key:
-	terraform output -state=infra/terraform.tfstate private_key_pem > key/private.pem
-	terraform output -state=infra/terraform.tfstate public_key_openssh > key/public.txt
-
+	terraform output -raw -state=infra/terraform.tfstate private_key_pem > key/private.pem
+	terraform output -raw -state=infra/terraform.tfstate public_key_openssh > key/public.txt
+	
+infra-output:
+	terraform output -state=infra/terraform.tfstate -json > output.json
+	python code/output.py
 # vm
 vm-connect:
-	ssh -i key/private.pem ec2-user@${DBS_ENDPOINT}
-
+	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
+vm-setup:
+	mkdir mlproject
 vm-copy:
-	scp -i key/private.pem -r ./requirement ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/requirement
-	scp -i key/private.pem -r ./code ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/code
-	scp -i key/private.pem -r ./dockerimage ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/dockerimage
-	scp -i key/private.pem -r ./.env ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/.env
-	scp -i key/private.pem -r ./docker-compose.yml ec2-user@${DBS_ENDPOINT}:/home/ec2-user/mlproject/docker-compose.yml
+	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
+	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
+	scp -i key/private.pem -r ./dockerimage ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/dockerimage
+	scp -i key/private.pem -r ./.env ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env
+	scp -i key/private.pem -r ./docker-compose.yml ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker-compose.yml
+	scp -i key/private.pem -r ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile
+
 # Script
 train:
 	python code/train.py
 
 testweb:
 	python code/test/web_test.py
-scp -i key/private.pem -r test.py ec2-user@ec2-175-41-186-206.ap-southeast-1.compute.amazonaws.com:/home/ec2-user/proj
+
 # Other
 # https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing?select=bank-additional-full.csv
 # Prerequisite: Have an kaggle account + key.json download < Kaggle key might expire need to regen first
@@ -112,3 +133,4 @@ docker-awspush:
 db-endpiont:
 	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
 	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
+

@@ -1,4 +1,3 @@
-python-dotenv
 scikit-learn
 prefect
 xgboost
