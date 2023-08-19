@@ -6,9 +6,9 @@ def main():
     env_dict = {
     'ecr_registry_url' : json_data['ecr_registry_url']['value'],
     'ecr_repo_url' : json_data['ecr_repo_url']['value'],
-    'instance_dns_name' : json_data['instance_dns_name']['value'],
-    'rds_endpoint_ml' : json_data['rds_endpoint_ml']['value'][:-5],
-    'rds_endpoint_moni' : json_data['rds_endpoint_moni']['value'][:-5]
+    'DBS_ENDPOINT' : json_data['DBS_ENDPOINT']['value'],
+    'AWS_DB_ML' : json_data['AWS_DB_ML']['value'][:-5],
+    'AWS_DB_MONITOR' : json_data['AWS_DB_MONITOR']['value'][:-5]
     }
     env_list = list(env_dict.keys())
     new_file = []

@@ -95,10 +95,10 @@ resource "aws_db_instance" "DB_MONI" {
   }
 }
 
-output "rds_endpoint_ml" {
+output "AWS_DB_ML" {
   value = aws_db_instance.DB_ML.endpoint
 }
-output "rds_endpoint_moni" {
+output "AWS_DB_MONITOR" {
   value = aws_db_instance.DB_MONI.endpoint
 }
 

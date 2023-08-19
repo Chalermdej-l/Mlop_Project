@@ -20,6 +20,13 @@ resource "aws_security_group" "instance_sg" {
     protocol  = "tcp"
     cidr_blocks = ["0.0.0.0/0"]  # Allow SSH access from anywhere (not recommended for production)
   }
+    ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow incoming traffic from your local browser IP
+  }
+  
   
   egress {
     from_port = 0
@@ -31,7 +38,7 @@ resource "aws_security_group" "instance_sg" {
 
 resource "aws_instance" "ec2_instance" {
   ami           = "ami-002843b0a9e09324a"
-  instance_type = "t2.micro"
+  instance_type = "t2.xlarge"
 
   key_name      = aws_key_pair.mlop_keypair.key_name  # Use the created key pair
 
@@ -54,6 +61,6 @@ output "public_key_openssh" {
   sensitive = true
 }
 
-output "instance_dns_name" {
+output "DBS_ENDPOINT" {
   value = aws_instance.ec2_instance.public_dns
 }

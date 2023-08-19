@@ -1,9 +1,6 @@
 include .env
 
-MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlop_project-mlserver-1)
-DBS_ENDPOINT=$(shell terraform output -state=infra/terraform.tfstate instance_dns_name)
-AWS_DB_ML=$(shell terraform output -state=infra/terraform.tfstate rds_endpoint_ml | tr -d ':5432')
-AWS_DB_MONITOR=$(shell terraform output -state=infra/terraform.tfstate rds_endpoint_moni | tr -d ':5432')
+MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlproject_mlserver_1)
 
 # AWS command
 awssetup:
@@ -30,7 +27,7 @@ dockerupmlserver:
 	docker-compose --profile mlflow up --detach 
 
 dockerupagent:
-	DBS_ENDPOINT=$(DBS_ENDPOINT) AWS_DB_ML=$(AWS_DB_ML) AWS_DB_MONITOR=$(AWS_DB_MONITOR) MLFLOW_URI="http://$(MLFLOW_URI):5000" docker-compose --profile mlflow-agent up --detach 
+	MLFLOW_URI="http://$(MLFLOW_URI):5000" docker-compose --profile mlflow-agent up --detach 
 
 dockerupml:
 	make dockerupmlserver
@@ -89,8 +86,7 @@ infra-output:
 # vm
 vm-connect:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
-vm-setup:
-	mkdir mlproject
+
 vm-copy:
 	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
 	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
@@ -134,3 +130,6 @@ db-endpiont:
 	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
 	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
 
+vm-setup:
+	mkdir mlproject
+	cd mlproject
