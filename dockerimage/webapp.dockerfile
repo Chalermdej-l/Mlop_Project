@@ -1,4 +1,4 @@
-FROM public.ecr.aws/lambda/python:3.9
+FROM python:3.7-slim-buster
 
 COPY requirement/Requirement-web.txt .
 
@@ -6,6 +6,9 @@ RUN pip install -r  Requirement-web.txt
 
 RUN pip install xgboost
 
-COPY code/predict-aws.py .
+WORKDIR /webapp
 
-CMD [ "predict-aws.lambda_handler" ]
+COPY code/predict.py .
+
+
+# ENTRYPOINT [ "waitress-serve", "--host" ,"127.0.0.1" ,"--port" ,"9696", "predict:app" ]

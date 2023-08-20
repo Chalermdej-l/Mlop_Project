@@ -2,8 +2,6 @@ version: "3.9"
 
 networks:
   back-tier:
-  front-tier:    
-  monitor-tier:
   
 # Cloud deployment
 services:  
@@ -50,8 +48,6 @@ services:
     image: webapp
     ports:
         - "9696:9696"  
-    networks:
-      - front-tier
     environment:
         - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
         - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
@@ -68,14 +64,14 @@ services:
 
   grafana:
     image: grafana/grafana
-    user: "472"
     ports:
       - "3000:3000"
     volumes:
       - ./config/datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
       - ./config/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./config/dashboards:/opt/grafana/dashboards
-    networks:
-      - monitor-tier
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
     restart: always
     profiles: ["monitor"]

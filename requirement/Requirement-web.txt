@@ -1,6 +1,7 @@
+flask
 mlflow
+waitress
 boto3
 botocore
 scikit-learn
 psycopg[binary]
-psycopg
