@@ -1,8 +1,3 @@
-provider "aws" {
-  region = var.aws_region
-
-}
-
 # Net work
 resource "aws_vpc" "mlop_vpc" {
   cidr_block = "10.0.0.0/16"

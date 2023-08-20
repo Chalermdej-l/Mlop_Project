@@ -1,0 +1,57 @@
+1. clone repo
+2. input the cred
+3. run infrs setup create
+make infra-setup
+make infra-create
+
+4. run dataprep to create the rds databaes
+make infra-prep
+
+5. run docker create and push the docker up to rds
+make dockercreate-web
+
+--
+repo_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_repo_url) | tr -d '"')
+regis_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_registry_url) | tr -d '"')
+region="ap-southeast-1"
+--
+aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${regis_url}.dkr.ecr.${region}.amazonaws.com"
+docker tag webapp:latest ${repo_url}:webapp
+docker push ${repo_url}:webapp
+
+
+7. go to vm setup the vm and run docker
+make vm-connect
+mkdir mlproject
+
+make vm-copy
+
+--then setup docker 
+cd mlproject
+sudo apt-get update -y
+sudo apt install python3-pip -y
+sudo pip install make
+--
+make vm-setup
+--
+
+
+8. run train
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+--
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose --version
+
+make dockercreate-back
+
+make dockerupml
+
+Then run the code in prefect
+
+9. get the bets model 
+
+
+
+10. create the lambda function
+11.test the front end
+12. monitor

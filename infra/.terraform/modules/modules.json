@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"db","Source":"./modules/db","Dir":"modules/db"},{"Key":"docker","Source":"./modules/docker","Dir":"modules/docker"},{"Key":"ec2","Source":"./modules/ec2","Dir":"modules/ec2"},{"Key":"ecr","Source":"./modules/ecr","Dir":"modules/ecr"},{"Key":"lambda","Source":"./modules/lambda","Dir":"modules/lambda"}]}

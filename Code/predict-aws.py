@@ -1,11 +1,9 @@
 import logging
 import mlflow
-import os
-import datetime
 import psycopg
 import datetime
-from waitress import serve
-from flask import Flask, request, jsonify
+import os
+import json
 
 RUN_ID = os.getenv('RUN_ID')
 S3_BUCKET = os.getenv('S3_BUCKET')
@@ -14,6 +12,8 @@ DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
 AWS_USER_DB = os.getenv('AWS_USER_DB')
 AWS_PASS_DB = os.getenv('AWS_PASS_DB')
 AWS_DB_MONITOR = os.getenv('AWS_DB_MONITOR')
+
+logging.basicConfig(level=logging.INFO)
 
 def getmodel():    
     path = f's3://{S3_BUCKET}/{EXPERIMENT_ID}/{RUN_ID}/artifacts/model'
@@ -78,13 +78,19 @@ def preparerespond(predict,data,version):
     dict_result['result'] = _list
     return dict_result
 
-app = Flask('bank-prediction')
 
-@app.route('/predict', methods=['POST'])
-def main():
 
-    logging.info('Receving request...')
-    request_data = request.get_json()
+
+def lambda_handler(event, context):
+    logging.info('Receiving request...')
+    # request_data = event['body']
+    request_data = [
+  {"age": 56, "job": "housemaid", "marital": "married", "education": "basic.4y", "default": "no", "housing": "no", "loan": "no", "contact": "telephone", "duration": 261, "campaign": 1, "pdays": 999, "previous": 0, "poutcome": "nonexistent", "emp.var.rate": 1.1, "cons.price.idx": 93.994, "cons.conf.idx": -36.4, "euribor3m": 4.857, "nr.employed": 5191.0, "id": "3ad93d85-2390-11ee-83b8-e7e9bcdc248d"}
+, {"age": 57, "job": "services", "marital": "married", "education": "high.school", "default": "unknown", "housing": "no", "loan": "no", "contact": "telephone", "duration": 149, "campaign": 1, "pdays": 999, "previous": 0, "poutcome": "nonexistent", "emp.var.rate": 1.1, "cons.price.idx": 93.994, "cons.conf.idx": -36.4, "euribor3m": 4.857, "nr.employed": 5191.0, "id": "3ad93d86-2390-11ee-bd5e-e7e9bcdc248d"}
+, {"age": 37, "job": "services", "marital": "married", "education": "high.school", "default": "no", "housing": "yes", "loan": "no", "contact": "telephone", "duration": 226, "campaign": 1, "pdays": 999, "previous": 0, "poutcome": "nonexistent", "emp.var.rate": 1.1, "cons.price.idx": 93.994, "cons.conf.idx": -36.4, "euribor3m": 4.857, "nr.employed": 5191.0, "id": "3ad93d87-2390-11ee-8a78-e7e9bcdc248d"}
+, {"age": 40, "job": "admin.", "marital": "married", "education": "basic.6y", "default": "no", "housing": "no", "loan": "no", "contact": "telephone", "duration": 151, "campaign": 1, "pdays": 999, "previous": 0, "poutcome": "nonexistent", "emp.var.rate": 1.1, "cons.price.idx": 93.994, "cons.conf.idx": -36.4, "euribor3m": 4.857, "nr.employed": 5191.0, "id": "3ad93d88-2390-11ee-b81f-e7e9bcdc248d"}
+, {"age": 56, "job": "services", "marital": "married", "education": "high.school", "default": "no", "housing": "no", "loan": "yes", "contact": "telephone", "duration": 307, "campaign": 1, "pdays": 999, "previous": 0, "poutcome": "nonexistent", "emp.var.rate": 1.1, "cons.price.idx": 93.994, "cons.conf.idx": -36.4, "euribor3m": 4.857, "nr.employed": 5191.0, "id": "3ad93d89-2390-11ee-a395-e7e9bcdc248d"}
+]
     data = convertdata(request_data)
 
     logging.info('Getting model...')
@@ -92,16 +98,21 @@ def main():
     version = model.__hash__()
 
     logging.info('Predicting...')
-    pred_result = predict(model,data)
-    
-    result = preparerespond(pred_result,request_data,version)
+    pred_result = predict(model, data)
+
+    result = preparerespond(pred_result, request_data, version)
 
     logging.info('Logging data...')
-    save_request(request_data,pred_result)
+    save_request(request_data, pred_result)
 
+    response = {
+        "statusCode": 200,
+        "body": json.dumps(result)
+    }
 
     logging.info('Done executing...')
-    return jsonify(result)
+    return response
+
 
 if __name__ == "__main__":
-    serve(app=app,host='0.0.0.0',port=9696)
+    lambda_handler()

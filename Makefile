@@ -67,25 +67,29 @@ infra-setup:
 	terraform -chdir=./infra init 
 	terraform -chdir=./infra plan -var-file=variables.tfvars
 
+infra-setup-web:
+	terraform -chdir=./infra-lambda init 
+	terraform -chdir=./infra-lambda plan -var-file=../infra/variables.tfvars -state=../infra/terraform.tfstate
+
 infra-down:
 	terraform -chdir=./infra destroy -var-file=variables.tfvars -auto-approve
 
 infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
 
+infra-create-web:
+	terraform -chdir=./infra-lambda apply -var-file=../infra/variables.tfvars -state=../infra/terraform.tfstate -target=module.lambda -target=module.gateway -auto-approve
+
 infra-prep:
 	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
-
-infra-key:
 	terraform output -raw -state=infra/terraform.tfstate private_key_pem > key/private.pem
 	terraform output -raw -state=infra/terraform.tfstate public_key_openssh > key/public.txt
-	
-infra-output:
 	terraform output -state=infra/terraform.tfstate -json > output.json
 	python code/output.py
 # vm
 vm-connect:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
+
 
 vm-copy:
 	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
@@ -94,6 +98,15 @@ vm-copy:
 	scp -i key/private.pem -r ./.env ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env
 	scp -i key/private.pem -r ./docker-compose.yml ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker-compose.yml
 	scp -i key/private.pem -r ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile
+	scp -i key/private.pem -r ./config ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/config
+
+
+vm-setup:
+	sudo apt-get update -y
+	sudo apt install docker.io -y
+	sudo chmod 666 /var/run/docker.sock
+
+
 
 # Script
 train:
@@ -129,7 +142,3 @@ docker-awspush:
 db-endpiont:
 	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
 	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
-
-vm-setup:
-	mkdir mlproject
-	cd mlproject

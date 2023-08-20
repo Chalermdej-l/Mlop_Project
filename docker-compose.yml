@@ -60,10 +60,11 @@ services:
         - S3_BUCKET=${S3_BUCKET}
         - EXPERIMENT_ID=${EXPERIMENT_ID}
         - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
-        - IP_WEB=${IP_WEB}
+        - AWS_USER_DB=${AWS_USER_DB}
+        - AWS_PASS_DB=${AWS_PASS_DB}
+        - AWS_DB_MONITOR=${AWS_DB_MONITOR}
     command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
     profiles: ["webapp"]  
-
 
   grafana:
     image: grafana/grafana
