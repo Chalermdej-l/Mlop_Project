@@ -85,5 +85,7 @@ Once all package is installed please follow the step in [Reproducre](/other/Repr
 
 ## Further Improvements
 Implement CI/CD
+
 Seperate the service into different host
+
 Implement best practice for code formating and testing
