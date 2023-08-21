@@ -1,6 +1,6 @@
 # MLOP Bank Deposit Prediction
 
-This project leverages concepts learned from the[MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp) course to implement a robust Machine Learning pipeline. By effectively training, evaluating, and selecting the optimal Machine Learning model, we aim to deploy it to a production environment while continuously monitoring its performance.
+This project leverages concepts learned from the[MLOps Zoomcamp](https://github.com/DataTalksClub/mlops-zoomcamp) course to implement a robust Machine Learning pipeline. By effectively training, evaluating, and selecting the optimal Machine Learning model, this project aims to deploy it to a production environment while continuously monitoring its performance.
 
 Utilizing the [Bank Marketing](https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing?select=bank-additional-full.csv) dataset sourced from [Kaggle](https://www.kaggle.com/), our objective is to predict the likelihood of customers subscribing to a bank term deposit.
 
@@ -8,9 +8,11 @@ Utilizing the [Bank Marketing](https://www.kaggle.com/datasets/henriqueyamahata/
 - [Problem Statement](#problem-statement)
 - [Tools Used](#tools-used)
 - [Project Flow](#project-flow)
-  - [(1) Train and Track the Machine Learning Experiment](#1-train-and-track-the-machine-learning-experiment)
-  - [(2) Deploy the Best Model](#2-deploy-the-best-model)
-  - [(3) Monitor the Model](#3-monitor-the-model)
+  - [1. Data Retrieval](#1-data-retrieval)
+  - [2. Train and Track the Machine Learning Experiment](#2-train-and-track-the-machine-learning-experiment)
+  - [3. Model Selection and Deployment](#3-model-selection-and-deployment)
+  - [4. Front-End API Service](#4-front-end-api-service)
+  - [5. Performance Monitoring](#5-performance-monitoring)
 - [Reproducibility](#reproducibility)
 - [Usage](#usage)
 - [Further Improvements](#further-improvements)
@@ -39,26 +41,31 @@ This project used the tool below.
 
 ## Project Flow
 
-### (1) Train and Track the Machine Learning Experiment
+![Project Flow](/image/projectflow.png)
 
-Begin by fetching data using the Kaggle API. For the sake of this example, an "id" column is manually added to simulate customer IDs. In production, the data would ideally be sourced from a data warehouse or storage repository.
-Train a model using the data. In this project, an XGBoost model is employed since it yielded the best results during experimentation.
-A Python script is employed to train the model, iterating through various parameters to identify the best-performing configuration. This training script is logged by Prefect and scheduled to run monthly, utilizing the most current data available.
-Experiment data is tracked and recorded by the MLflow server, storing model artifacts within AWS S3 storage, while also saving the experiment details within a PostgreSQL database.
+## Project Flow
 
-### (2) Deploy the Best Model
+### 1. Data Retrieval
 
-Identify the best-performing model from step 1 based on accuracy and F1 score.
-Data scientists make a judgment call, evaluating whether the new model surpasses the performance of the existing production model.
-If the new model is deemed superior, it's pushed to GitHub. The model undergoes unit tests and integration tests, and the CI/CD pipeline is triggered using GitHub Actions to automate deployment.
+In this step, the project starts by fetching data from Kaggle using the Kaggle API. The retrieved data is then modified and add an "id" column to simulate customer IDs in production this should be present in the data then the data is stored in an AWS S3 bucket. To manage the data processing pipeline, Prefect is utilized as a data orchestrator and scheduler. In production, the data should be sourced directly from the database.
 
-### (3) Monitor the Model
+### 2. Train and Track the Machine Learning Experiment
 
-Once the chosen model is finalized for deployment, it's integrated into a Lambda function. This function receives requests via an API endpoint and returns prediction results.
-Incoming requests are logged into a PostgreSQL database.
-On a daily basis, monitor metrics are calculated, using Evidently to assess model performance.
-The calculated metrics are stored in the database and are linked with a Grafana dashboard for continuous monitoring and analysis of the model's behavior and efficacy.
-This enhanced project flow captures the steps involved in data handling, model training, deployment decision-making, and ongoing monitoring to ensure the model's effectiveness over time.
+With the acquired data, the project proceeds to train a machine-learning model in this project XGBoost model is used as this performs the best from experimenting with the data. MLflow is employed for tracking and managing training experiments. Experiment logs are stored in an AWS RDS PostgreSQL database.
+The trained model artifacts are then saved in an AWS S3 bucket.
+
+### 3. Model Selection and Deployment
+
+Python script is implemented to connect to the MLflow. The script selects the most optimal model based on accuracy and F1 score metrics. This model is then deployed to a front-end API endpoint. 
+In production, the data science team should monitor the model and evaluate whether the new model is suited to deploy to production or not. All production models are tracked in MLflow for version control.
+
+### 4. Front-End API Service
+
+The front-end API service is established using Flask and Waitress. This API interacts with the AWS S3 bucket to retrieve the model corresponding to the provided model ID. By accepting API requests from users, the front end performs predictions on incoming data. The API request is logged in an AWS RDS PostgreSQL database for model monitoring and service request traffic.
+
+### 5. Performance Monitoring
+
+To assess the performance of the deployed model Evidently is used for the calculation of metrics based on API prediction results. By comparing these metrics with the data stored in AWS S3 from Step 1, the model's performance is evaluated. The calculated metrics are then stored in a database. Grafana is used to fetch these metrics and user logs, presenting them in an accessible performance dashboard.
 
 
 ## Reproducibility
