@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: "AWS_DB_MONITOR"
+    database: MONITOR_DB
+    user: mlop_useradmin
+    password: mlop_passadmin
+    isDefault: true
+    editable: true
+    secureJsonData:
+      password: 'mlop_passadmin'
+    jsonData:
+      sslmode: 'require'
+      tlsSkipVerify: true

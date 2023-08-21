@@ -18,7 +18,7 @@ services:
         - "5000:5000"    
     networks:
         - back-tier 
-    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${AWS_USER_DB}:${AWS_PASS_DB}@${AWS_DB_ML}:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET} 
+    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${AWS_USER_DB}:${AWS_PASS_DB}@${AWS_DB_ML}:5432/${DB_NAME_ML} --default-artifact-root s3://${S3_BUCKET} 
     profiles: ["mlflow"]
 
   agent:
@@ -37,8 +37,7 @@ services:
       - PREFECT_API_KEY=${Prefect_API_KEY}
       - S3_BUCKET=${S3_BUCKET_DATA}
       - MLFLOW_URI=${MLFLOW_URI}
-      - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
-      - IP_MONITOR=${IP_MONITOR}
+      - DB_NAME_MONI=${DB_NAME_MONI}
     profiles: ["mlflow-agent"]
     command: bash -c "python train.py && python monitor.py && prefect agent start -q default"
 
@@ -55,7 +54,7 @@ services:
         - RUN_ID=${RUN_ID}
         - S3_BUCKET=${S3_BUCKET}
         - EXPERIMENT_ID=${EXPERIMENT_ID}
-        - DB_NAME_GRAFANA=${DB_NAME_GRAFANA}
+        - DB_NAME_MONI=${DB_NAME_MONI}
         - AWS_USER_DB=${AWS_USER_DB}
         - AWS_PASS_DB=${AWS_PASS_DB}
         - AWS_DB_MONITOR=${AWS_DB_MONITOR}

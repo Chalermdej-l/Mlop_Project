@@ -1,9 +1,7 @@
-/data
 *pptx
 *ipynb
 coomand_script.py
 .env
-config
 /model
 /db
 /Experiment
@@ -12,6 +10,6 @@ config
 *backup
 *exe
 *hcl
-/key
-.env *
+/key/*.pem
+/key/*.txt
 output.json

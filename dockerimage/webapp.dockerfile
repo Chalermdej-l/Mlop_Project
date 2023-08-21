@@ -10,5 +10,3 @@ WORKDIR /webapp
 
 COPY code/predict.py .
 
-
-# ENTRYPOINT [ "waitress-serve", "--host" ,"127.0.0.1" ,"--port" ,"9696", "predict:app" ]

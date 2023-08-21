@@ -1,5 +1,5 @@
 from mlflow.tracking import MlflowClient
-
+import argparse
 
 def registermodel(client,name_model):       
     runs = client.search_runs(experiment_ids=1
@@ -31,34 +31,38 @@ def deploy_model_prod(version,client,name_model):
     )
 
 def logmodelid(prod_model):
-    with open('../.env','r')as f:
+    with open('.env','r')as f:
         con =f.read()
 
-    with open('../.env','w')as f:
+    with open('.env','w')as f:
         for i in con.split('\n'):
             para = i[:i.find('=')-1]
             if para == 'RUN_ID':
                 f.write(f"RUN_ID = '{prod_model}'")
-                print(i)
+
             else:
                 f.write(i)
             f.write('\n')
-def main():
-    client = MlflowClient(tracking_uri='http://127.0.0.1:5000')
+def main(mlflow_uri):
+    client = MlflowClient(tracking_uri=f'http://{mlflow_uri}:5000')
     name_model = 'ML_xgb'   
 
-    print('Register best model ...')
+
     registermodel(client,name_model)
     version = getlastestmodel_version(client,name_model)
 
-    print(f'Move model to production current version {version}...')
+
     deploy_model_prod(version,client,name_model)
 
-# local deploy
-    print('Getting prod model id...')
+
     prod_model = client.get_latest_versions(name=name_model,stages=['Production'])[0].run_id
 
-    print('logging model id ...')
+
     logmodelid(prod_model)
+    print(prod_model)
+
 if __name__ =='__main__':
-    main()
+    arg = argparse.ArgumentParser()
+    arg.add_argument('mlflow_uri')
+    arg = arg.parse_args()
+    main(arg.mlflow_uri)

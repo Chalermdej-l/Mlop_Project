@@ -27,6 +27,19 @@ resource "aws_security_group" "instance_sg" {
     cidr_blocks = ["0.0.0.0/0"]  # Allow incoming traffic from your local browser IP
   }
   
+    ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow incoming traffic from your local browser IP
+  }
+  
+    ingress {
+    from_port   = 9696
+    to_port     = 9696
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  # Allow incoming traffic from your local browser IP
+  }
   
   egress {
     from_port = 0
@@ -38,7 +51,7 @@ resource "aws_security_group" "instance_sg" {
 
 resource "aws_instance" "ec2_instance" {
   ami           = "ami-002843b0a9e09324a"
-  instance_type = "t2.xlarge"
+  instance_type = var.ec2_instance
 
   key_name      = aws_key_pair.mlop_keypair.key_name  # Use the created key pair
 

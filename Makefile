@@ -1,6 +1,7 @@
 include .env
 
 MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlproject_mlserver_1)
+API_URL=$(shell terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
 
 # AWS command
 awssetup:
@@ -32,6 +33,11 @@ dockerupagent:
 dockerupml:
 	make dockerupmlserver
 	make dockerupagent
+
+dockerup:
+	make dockerupml
+	docker-compose --profile webapp up --detach 
+	docker-compose --profile monitor up --detach 
 	
 dockerupweb:
 	docker-compose --profile webapp up --detach 
@@ -52,6 +58,11 @@ dockerdownml:
 	docker-compose -f docker-compose.yml --profile mlflow down
 	docker-compose -f docker-compose.yml --profile mlflow-agent down
 
+dockercreate:
+	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
+	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f dockerimage/prefect.dockerfile -t python_prefect_agent .
+	docker build -f dockerimage/webapp.dockerfile -t webapp .
+
 dockercreate-web:
 	docker build -f dockerimage/webapp.dockerfile -t webapp .
 	
@@ -67,18 +78,11 @@ infra-setup:
 	terraform -chdir=./infra init 
 	terraform -chdir=./infra plan -var-file=variables.tfvars
 
-infra-setup-web:
-	terraform -chdir=./infra-lambda init 
-	terraform -chdir=./infra-lambda plan -var-file=../infra/variables.tfvars -state=../infra/terraform.tfstate
-
 infra-down:
 	terraform -chdir=./infra destroy -var-file=variables.tfvars -auto-approve
 
 infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
-
-infra-create-web:
-	terraform -chdir=./infra-lambda apply -var-file=../infra/variables.tfvars -state=../infra/terraform.tfstate -target=module.lambda -target=module.gateway -auto-approve
 
 infra-prep:
 	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
@@ -90,7 +94,6 @@ infra-prep:
 vm-connect:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
 
-
 vm-copy:
 	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
 	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
@@ -100,45 +103,25 @@ vm-copy:
 	scp -i key/private.pem -r ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile
 	scp -i key/private.pem -r ./config ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/config
 
-
 vm-setup:
 	sudo apt-get update -y
 	sudo apt install docker.io -y
 	sudo chmod 666 /var/run/docker.sock
 
-
-
 # Script
-train:
-	python code/train.py
+testapi:
+	python code/api_test.py '$(API_URL)'
 
-testweb:
-	python code/test/web_test.py
-
-# Other
-# https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing?select=bank-additional-full.csv
-# Prerequisite: Have an kaggle account + key.json download < Kaggle key might expire need to regen first
 getdata:
 	kaggle datasets download -d henriqueyamahata/bank-marketing -p data --unzip --force
 	python code/genmeta.py
 	aws s3 mb s3://${S3_BUCKET_DATA}
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
-mlup:
-	mlflow server --backend-store-uri postgresql://root:root@127.0.0.1:5432/${DB_NAME} --default-artifact-root s3://${S3_BUCKET}
-
-prefectlogin:
-	prefect cloud login --key ${Prefect_API_KEY} --workspace ${Prefect_Workspace}
-
-# Need to execute manual
-docker-awspush:
-	repo_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_repo_url) | tr -d '"')
-	regis_url=$(echo $(terraform output -state=infra/terraform.tfstate ecr_registry_url) | tr -d '"')
-	region="ap-southeast-1"
-	aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin "${regis_url}.dkr.ecr.${region}.amazonaws.com"
-	docker tag webapp:latest ${repo_url}:webapp
-	docker push ${repo_url}:webapp
-
-db-endpiont:
-	terraform output -state=infra/terraform.tfstate rds_endpoint_ml
-	terraform output -state=infra/terraform.tfstate rds_endpoint_moni
+deploy-api:
+	db_endpoint='ec2-13-229-243-71.ap-southeast-1.compute.amazonaws.com'
+	model_id=$(python code/deploymodel.py "$db_endpoint")
+	ssh -i key/private.pem ubuntu@${db_endpoint} " 
+	cd mlproject
+	RUN_ID=${model_id} docker-compose --profile webapp up --detac
+	"

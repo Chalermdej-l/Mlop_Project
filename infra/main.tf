@@ -1,10 +1,8 @@
 
 provider "aws" {
   region = var.aws_region
-}
-
-
-# ride_events
+  }
+  
 module "db" {
   source = "./modules/db"   
   db_intance_type      = var.db_intance_type
@@ -18,32 +16,20 @@ module "db" {
   db_identifier_ml     = var.db_identifier_ml
 }
 
-module "ecr" {
-  source = "./modules/ecr"     
-}
-
 module "ec2" {
   source = "./modules/ec2"   
+  ec2_instance = var.ec2_instance
 }
-
 output "private_key_pem" {
   value = module.ec2.private_key_pem
   sensitive = true
 }
-
 output "public_key_openssh" {
   value = module.ec2.public_key_openssh
   sensitive = true
 }
 output "DBS_ENDPOINT" {
   value = module.ec2.DBS_ENDPOINT
-}
-
-output "ecr_repo_url" {
-  value = module.ecr.ecr_repo_url
-}
-output "ecr_registry_url" {
-  value = module.ecr.ecr_registry_url
 }
 output "AWS_DB_ML" {
   value = module.db.AWS_DB_ML

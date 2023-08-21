@@ -4,8 +4,6 @@ def main():
     json_data_raw = open('output.json')
     json_data = json.load(json_data_raw)
     env_dict = {
-    'ecr_registry_url' : json_data['ecr_registry_url']['value'],
-    'ecr_repo_url' : json_data['ecr_repo_url']['value'],
     'DBS_ENDPOINT' : json_data['DBS_ENDPOINT']['value'],
     'AWS_DB_ML' : json_data['AWS_DB_ML']['value'][:-5],
     'AWS_DB_MONITOR' : json_data['AWS_DB_MONITOR']['value'][:-5]
