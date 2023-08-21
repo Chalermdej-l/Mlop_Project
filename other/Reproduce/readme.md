@@ -1,6 +1,4 @@
 
-## Setup and Configuration Guide
-
 # Table of Contents
 
 1. [Clone the Project and Configuration Setup](#1-clone-the-project-and-configuration-setup)
