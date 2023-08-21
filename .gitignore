@@ -1,10 +1,6 @@
 *pptx
 *ipynb
 coomand_script.py
-.env
-/model
-/db
-/Experiment
 *tfstate
 *tfvars
 *backup
