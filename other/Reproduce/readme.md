@@ -3,25 +3,16 @@
 
 # Table of Contents
 
-
-  - [Clone the Project and Configuration Setup](#1-clone-the-project-and-configuration-setup)
-  - [Data Retrieval and Infrastructure Initialization](#2-data-retrieval-and-infrastructure-initialization)
-  - [The Key Pair to Connect to the EC2](#3-the-key-pair-to-connect-to-the-ec2)
-- [Data Retrieval and Infrastructure Initialization](#data-retrieval-and-infrastructure-initialization)
-  - [Create S3 Bucket](#1-execute-the-following-command-to-create-an-s3-bucket-this-bucket-will-be-used-for-storing-our-data-and-model-artifacts)
-  - [Download and Prepare Data](#2-if-you-have-the-kaggle-api-set-up-download-and-extract-the-data-into-the-data-directory-using)
-  - [Add ID Column and Upload Data to S3](#3-then-we-will-add-an-id-column-to-the-data-and-then-upload-it-to-the-s3-bucket-run)
-  - [Terraform Infrastructure Setup](#4-for-executing-the-terraform-plan-of-the-project-use)
-  - [Create Planned Services](#5-then-run-below-to-create-the-planned-services)
-- [The Key Pair to Connect to the EC2](#the-key-pair-to-connect-to-the-ec2)
-- [VM Connection and Setup](#4-vm-connection-and-setup)
-- [Docker Create and Run](#5-docker-create-and-run)
-- [Train the Model and Deploy the Model](#6-train-the-model-and-deploy-the-model)
-- [Model Monitoring](#7-model-monitoring)
-- [Clean Up](#8-clean-up)
+1. [Clone the Project and Configuration Setup](#1-clone-the-project-and-configuration-setup)
+2. [Data Retrieval and Infrastructure Initialization](#2-data-retrieval-and-infrastructure-initialization)
+3. [VM Connection and Setup](#3-vm-connection-and-setup)
+4. [Docker Create and Run](#4-docker-create-and-run)
+5. [Train the model and deploy the model](#5-train-the-model-and-deploy-the-model)
+6. [Model Monitoring](#6-model-monitoring)
+7. [Clean up](#7-clean-up)
 
 
-### 1. Clone the Project and Configuration Setup
+## 1. Clone the Project and Configuration Setup
 
 First, clone the project and navigate to the cloned directory:
 
@@ -49,7 +40,7 @@ Provide the following details:
 - AWS Secret Access Key
 - Default Region Name
 
-### 2. Data Retrieval and Infrastructure Initialization
+## 2. Data Retrieval and Infrastructure Initialization
 
 Execute the following command to create an S3 bucket. This bucket will be used for storing our data and model artifacts:
 
@@ -100,7 +91,6 @@ Terraform will create:
 
 ![Terraform Output](/image/reproduce/6.png)
 
-## 3. The Key Pair to Connect to the EC2
 
 The code will also output the endpoint of each resource for connection later:
 
@@ -116,7 +106,7 @@ This command will output the endpoint in an output.json file, populate the DBS_E
 
 ![Terraform Output](/image/reproduce/8.png)
 
-## 4. VM Connection and Setup
+## 3. VM Connection and Setup
 
 Open another terminal and navigate to the project and run the following command to connect to the EC2. This terminal will now be referred to as `cloud terminal`, and the first terminal as `local terminal`:
 
@@ -164,7 +154,7 @@ The output should look like below:
 
 ![Terraform Output](/image/reproduce/10.png)
 
-## 5. Docker Create and Run
+## 4. Docker Create and Run
 
 Create the Docker image by running:
 
@@ -189,7 +179,7 @@ Go to [Prefect](https://app.prefect.cloud/), where there will now be 2 deploymen
 
 ![Terraform Output](/image/reproduce/11.png)
 
-### 6. Train the model and deploy the model
+## 5. Train the model and deploy the model
 
 Run the MLOP-TrainML job to start training 
 
@@ -243,7 +233,7 @@ Our frontend is now ready to accept requests
 
 ![Terraform Output](/image/reproduce/17.png)
 
-### 7. Model Monitoring
+## 6. Model Monitoring
 
 After the user has sent the request will get log into the RDS Postgres database
 we can then run the MLOP-MonitorML job to calculate the metric this job is scheduled to run daily to monitor the model performance 
@@ -260,7 +250,7 @@ After login, we can monitor the model performance using the prepared dashboard m
 ![Terraform Output](/image/reproduce/20.png)
 
 
-### 8. Clean up
+## 7. Clean up
 
 After done with the test you can run the below command to delete all created service 
 
