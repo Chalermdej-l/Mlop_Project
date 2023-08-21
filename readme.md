@@ -14,7 +14,6 @@ Utilizing the [Bank Marketing](https://www.kaggle.com/datasets/henriqueyamahata/
   - [4. Front-End API Service](#4-front-end-api-service)
   - [5. Performance Monitoring](#5-performance-monitoring)
 - [Reproducibility](#reproducibility)
-- [Usage](#usage)
 - [Further Improvements](#further-improvements)
 ## Problem Statement
 Traditionally, reaching out to customers to gauge their interest in a bank term deposit involves resource-intensive methods such as individual phone calls. With the vast number of customer accounts, this approach proves time-consuming and inefficient. To address this challenge and optimize the allocation of resources and time, we propose a Machine Learning solution. By training the model on historical customer data, including information gathered during the account creation process, and leveraging insights from previous marketing campaigns, we aim to predict whether a customer is likely to respond positively or negatively to a term deposit offer. This predictive capability empowers stakeholders to strategically target the most receptive audience, enhancing the efficacy of marketing campaigns.
@@ -43,8 +42,6 @@ This project used the tool below.
 
 ![Project Flow](/image/projectflow.png)
 
-## Project Flow
-
 ### 1. Data Retrieval
 
 In this step, the project starts by fetching data from Kaggle using the Kaggle API. The retrieved data is then modified and add an "id" column to simulate customer IDs in production this should be present in the data then the data is stored in an AWS S3 bucket. To manage the data processing pipeline, Prefect is utilized as a data orchestrator and scheduler. In production, the data should be sourced directly from the database.
@@ -70,8 +67,23 @@ To assess the performance of the deployed model Evidently is used for the calcul
 
 ## Reproducibility
 
+`Prerequisite`:
+To reproduce this project you would need the below account
 
+1. [AWS Account and IAM](/other/AWSAccount)
+2. [Prefect Cloud Account And API Key](/other/PrefectAccount)
 
-## Usage
+You also need below package
+
+1. [Makefile](https://pypi.org/project/make/) `pip install  make`
+2. [AWS CLI](https://aws.amazon.com/cli/) `pip install awscli`
+3. [Terraform](https://developer.hashicorp.com/terraform/downloads)
+4. [Docker](https://www.docker.com/)
+5. [Docker Compose](https://docs.docker.com/compose/)
+
+Once all package is installed please follow the step in [Reproducre](/other/Reproduce) to re-create the project
 
 ## Further Improvements
+Implement CI/CD
+Seperate the service into different host
+Implement best practice for code formating and testing
