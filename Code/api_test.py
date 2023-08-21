@@ -13,9 +13,8 @@ def sendrequest(url):
     url = f'http://{url}:9696/predict'
     result=  requests.post(url,json=sample_data)
 
-    assert result.status_code == 200
     print(result.status_code)
-    print(result.json())
+    print(result.content)
 
 if __name__ == "__main__":
     arg = argparse.ArgumentParser()

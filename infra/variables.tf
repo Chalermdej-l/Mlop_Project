@@ -40,3 +40,6 @@ variable "S3_BUCKET" {
 variable "S3_BUCKET_DATA" {
     type = string
 }
+variable "ec2_instance" {
+    type = string
+}

@@ -24,10 +24,10 @@ def main():
     with open('.env','w')as f:
         f.write(new_file)
 
-    with open('../config/datasources.yaml','r') as config:
+    with open('./config/datasources.yaml','r') as config:
         old_config =config.read()
     new_config = old_config.replace('"AWS_DB_MONITOR"',json_data['AWS_DB_MONITOR']['value'])
-    with open('../config/datasources.yaml','w') as config:
+    with open('./config/datasources.yaml','w') as config:
         config.write(new_config)
 if __name__ == '__main__':
     main()

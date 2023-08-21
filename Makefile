@@ -9,6 +9,7 @@ awssetup:
 
 s3create:
 	aws s3 mb s3://${S3_BUCKET}
+	aws s3 mb s3://${S3_BUCKET_DATA}
 
 s3list:
 	#'----------------------'
@@ -36,7 +37,6 @@ dockerupml:
 
 dockerup:
 	make dockerupml
-	docker-compose --profile webapp up --detach 
 	docker-compose --profile monitor up --detach 
 	
 dockerupweb:
@@ -85,16 +85,18 @@ infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
 
 infra-prep:
-	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
 	terraform output -raw -state=infra/terraform.tfstate private_key_pem > key/private.pem
 	terraform output -raw -state=infra/terraform.tfstate public_key_openssh > key/public.txt
 	terraform output -state=infra/terraform.tfstate -json > output.json
 	python code/output.py
+	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
+
 # vm
 vm-connect:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
 
 vm-copy:
+	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT} mkdir mlproject
 	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
 	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
 	scp -i key/private.pem -r ./dockerimage ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/dockerimage
@@ -109,19 +111,17 @@ vm-setup:
 	sudo chmod 666 /var/run/docker.sock
 
 # Script
-testapi:
-	python code/api_test.py '$(API_URL)'
-
 getdata:
-	kaggle datasets download -d henriqueyamahata/bank-marketing -p data --unzip --force
-	python code/genmeta.py
-	aws s3 mb s3://${S3_BUCKET_DATA}
+	python code/genmeta.py	
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
 deploy-api:
-	db_endpoint='ec2-13-229-243-71.ap-southeast-1.compute.amazonaws.com'
-	model_id=$(python code/deploymodel.py "$db_endpoint")
-	ssh -i key/private.pem ubuntu@${db_endpoint} " 
-	cd mlproject
-	RUN_ID=${model_id} docker-compose --profile webapp up --detac
-	"
+	db_endpoint=$(terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
+	db_endpoint=$(echo $db_endpoint | tr -d '"')
+	model_id=$(python code/deploymodel.py $db_endpoint)
+	ssh -i key/private.pem ubuntu@${db_endpoint} "cd mlproject && RUN_ID=${model_id} docker-compose --profile webapp up --detac"
+
+testapi:
+	db_endpoint=$(terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
+	db_endpoint=$(echo $db_endpoint | tr -d '"')
+	python code/api_test.py $db_endpoint
