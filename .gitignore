@@ -1,10 +1,34 @@
-*pptx
-*ipynb
-coomand_script.py
-*tfstate
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Environment & secrets
+.env
+.env.local
+key/*
+!key/.gitkeep
+output.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
+
+# Generated
+config/datasources.generated.yaml
+
+# Data
+data/*
+!data/.gitkeep
+
+# Misc
+*.pptx
+*.ipynb
 *backup
 *exe
-*hcl
-/key/*.pem
-/key/*.txt
-output.json
+.DS_Store
