@@ -6,7 +6,25 @@
 -include .env.local
 export
 
-MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlproject_mlserver_1)
+MLFLOW_URI=$(shell docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mlproject-mlserver-1)
+
+.PHONY: help \
+	awssetup s3create s3list s3delete \
+	dockerupmlserver dockerupagent dockerupml dockerup dockerupweb dockerupmoni \
+	dockerdown dockerdownweb dockerdownmoni dockerdownml \
+	dockercreate dockercreate-web dockercreate-back dockerprune \
+	infra-setup infra-down infra-create infra-prep \
+	vm-connect vm-copy vm-setup \
+	getdata deploy-api testapi
+
+help:
+	@echo "Usage: make <target>"
+	@echo ""
+	@echo "AWS:        awssetup, s3create, s3list, s3delete"
+	@echo "Docker:     dockercreate, dockerupml, dockerup, dockerupweb, dockerdown, dockerprune"
+	@echo "Terraform:  infra-setup, infra-create, infra-prep, infra-down"
+	@echo "VM:         vm-connect, vm-copy, vm-setup"
+	@echo "Run:        getdata, deploy-api, testapi"
 
 # AWS command
 awssetup:
@@ -17,24 +35,24 @@ s3create:
 	aws s3 mb s3://${S3_BUCKET_DATA}
 
 s3list:
-	#'----------------------'
-	#'All Bucket List:'
-	aws s3 ls 
-	#'----------------------'
-	#'All Item in ${S3_BUCKET}:'
+	@echo '----------------------'
+	@echo 'All Bucket List:'
+	aws s3 ls
+	@echo '----------------------'
+	@echo "All Item in ${S3_BUCKET}:"
 	aws s3 ls ${S3_BUCKET}
-	#'----------------------'
+	@echo '----------------------'
 
 s3delete:
 	aws s3 rb s3://${S3_BUCKET} --force
 	aws s3 rb s3://${S3_BUCKET_DATA} --force
 
-# Docker 
+# Docker
 dockerupmlserver:
-	docker-compose --profile mlflow up --detach 
+	docker-compose --profile mlflow up --detach
 
 dockerupagent:
-	MLFLOW_URI="http://$(MLFLOW_URI):5000" docker-compose --profile mlflow-agent up --detach 
+	MLFLOW_URI="http://$(MLFLOW_URI):5000" docker-compose --profile mlflow-agent up --detach
 
 dockerupml:
 	make dockerupmlserver
@@ -42,13 +60,13 @@ dockerupml:
 
 dockerup:
 	make dockerupml
-	docker-compose --profile monitor up --detach 
-	
+	docker-compose --profile monitor up --detach
+
 dockerupweb:
-	docker-compose --profile webapp up --detach 
+	docker-compose --profile webapp up --detach
 
 dockerupmoni:
-	docker-compose --profile monitor up --detach 
+	docker-compose --profile monitor up --detach
 
 dockerdown:
 	docker-compose down --remove-orphans
@@ -65,22 +83,22 @@ dockerdownml:
 
 dockercreate:
 	docker build -f docker/sqlalchemy.dockerfile -t mlflow .
-	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f docker/prefect.dockerfile -t python_prefect_agent .
+	docker build -f docker/prefect.dockerfile -t python_prefect_agent .
 	docker build -f docker/webapp.dockerfile -t webapp .
 
 dockercreate-web:
 	docker build -f docker/webapp.dockerfile -t webapp .
-	
+
 dockercreate-back:
 	docker build -f docker/sqlalchemy.dockerfile -t mlflow .
-	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f docker/prefect.dockerfile -t python_prefect_agent .
+	docker build -f docker/prefect.dockerfile -t python_prefect_agent .
 
 dockerprune:
 	docker system prune --force
 
 # Terraform
 infra-setup:
-	terraform -chdir=./infra init 
+	terraform -chdir=./infra init
 	terraform -chdir=./infra plan -var-file=variables.tfvars
 
 infra-down:
@@ -119,16 +137,14 @@ vm-setup:
 
 # Script
 getdata:
-	python code/genmeta.py	
+	python code/genmeta.py
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
 deploy-api:
-	db_endpoint=$(terraform -chdir=./infra output DBS_ENDPOINT)
-	db_endpoint=$(echo $db_endpoint | tr -d '"')
-	model_id=$(python code/deploymodel.py $db_endpoint)
-	ssh -i key/private.pem ubuntu@${db_endpoint} "cd mlproject && RUN_ID=${model_id} docker-compose --profile webapp up --detac"
+	db_endpoint=$$(terraform -chdir=./infra output DBS_ENDPOINT | tr -d '"') && \
+	model_id=$$(python code/deploymodel.py $$db_endpoint) && \
+	ssh -i key/private.pem ubuntu@$$db_endpoint "cd mlproject && RUN_ID=$$model_id docker-compose --profile webapp up --detach"
 
 testapi:
-	db_endpoint=$(terraform -chdir=./infra output DBS_ENDPOINT)
-	db_endpoint=$(echo $db_endpoint | tr -d '"')
-	python code/api_test.py $db_endpoint
+	db_endpoint=$$(terraform -chdir=./infra output DBS_ENDPOINT | tr -d '"') && \
+	python code/api_test.py $$db_endpoint
