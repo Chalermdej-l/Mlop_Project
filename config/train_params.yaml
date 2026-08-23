@@ -1,0 +1,6 @@
+# Hyperparameter grid for the XGBoost training flow (train.py).
+# 2 x 3 x 3 x 3 = 54 fits per scheduled run.
+learning_rate: [0.1, 0.01]
+max_depth: [5, 15, 25]
+gamma: [1, 10, 20]
+n_estimators: [100, 300, 600]

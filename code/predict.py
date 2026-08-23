@@ -1,107 +1,91 @@
+import datetime
 import logging
-import mlflow
 import os
-import datetime
+
+import mlflow
 import psycopg
-import datetime
+from flask import Flask, jsonify, request
 from waitress import serve
-from flask import Flask, request, jsonify
 
-RUN_ID = os.getenv('RUN_ID')
-S3_BUCKET = os.getenv('S3_BUCKET')
-EXPERIMENT_ID = os.getenv('EXPERIMENT_ID','1')
-DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA','Monitor_DB')
-AWS_USER_DB = os.getenv('AWS_USER_DB')
-AWS_PASS_DB = os.getenv('AWS_PASS_DB')
-AWS_DB_MONITOR = os.getenv('AWS_DB_MONITOR')
+from constants import API_PORT, DB_PORT, REQUEST_COLUMNS
+from features import bucket_age, bucket_duration
+from response import prepare_response
 
-def getmodel():    
-    path = f's3://{S3_BUCKET}/{EXPERIMENT_ID}/{RUN_ID}/artifacts/model'
-    model = mlflow.sklearn.load_model(path)
-    return model
+RUN_ID = os.getenv("RUN_ID")
+S3_BUCKET = os.getenv("S3_BUCKET")
+EXPERIMENT_ID = os.getenv("EXPERIMENT_ID", "1")
+DB_NAME_GRAFANA = os.getenv("DB_NAME_GRAFANA", "Monitor_DB")
+AWS_USER_DB = os.getenv("AWS_USER_DB")
+AWS_PASS_DB = os.getenv("AWS_PASS_DB")
+AWS_DB_MONITOR = os.getenv("AWS_DB_MONITOR")
 
-def save_request(datas,predict):
+app = Flask("bank-prediction")
+
+
+def get_db_connection():
+    return psycopg.connect(
+        host=AWS_DB_MONITOR,
+        dbname=DB_NAME_GRAFANA,
+        port=DB_PORT,
+        user=AWS_USER_DB,
+        password=AWS_PASS_DB,
+        autocommit=True,
+    )
+
+
+def getmodel():
+    path = f"s3://{S3_BUCKET}/{EXPERIMENT_ID}/{RUN_ID}/artifacts/model"
+    return mlflow.sklearn.load_model(path)
+
+
+# Load once at startup instead of re-downloading and unpickling the
+# whole pipeline from S3 on every request.
+model = getmodel()
+
+
+def save_request(datas, predict):
     current_time = datetime.datetime.today()
-    query= """
-    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed,id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    query = """
+    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed, id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """
-    
-    with psycopg.connect(f"host={AWS_DB_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user={AWS_USER_DB} password={AWS_PASS_DB}", autocommit=True) as con:
-        for i,data in enumerate(datas):
-            data['timestamp'] = current_time
-            data['prediction'] = int(predict[i])
-            con.execute(query,tuple(data.values()))            
-    con.close()
-    return None
+    with get_db_connection() as con:
+        for i, data in enumerate(datas):
+            data["timestamp"] = current_time
+            data["prediction"] = int(predict[i])
+            values = tuple(data[col] for col in REQUEST_COLUMNS)
+            con.execute(query, values + (current_time, int(predict[i])))
+
 
 def convertdata(data):
-    for i in data:
+    for record in data:
         # Convert age variable
-        x =  i['age']
-        i['age']    = (1 if x >=0 and x<32 else  \
-                            2 if x>=32 and x<38 else  \
-                            3 if x>=38 and x<47 else  \
-                            4 if x>=47 and x<60 else  \
-                            5 if x>=60 and x<90 else  \
-                            6)
-
+        record["age"] = bucket_age(record["age"])
         # Convert duration variable
-        x = i['duration']
-        i['duration'] = (1 if x >=0 and x<30 else  \
-                            2 if x>=30 and x<60 else  \
-                            3 if x>=60 and x<120 else  \
-                            4 if x>=120 and x<180 else  \
-                            5 if x>=180 and x<240 else  \
-                            6 if x>=240 and x<300 else  \
-                            7 if x>=300 and x<360 else  \
-                            8 if x>=360 and x<420 else  \
-                            9 if x>=420 and x<480 else  \
-                        10)
+        record["duration"] = bucket_duration(record["duration"])
     return data
 
-def predict(model,data):
 
-    result = model.predict(data)
-    return result
+def predict(model, data):
+    return model.predict(data)
 
 
-def preparerespond(predict,data,version):
-    _list = []
-    dict_result = {}
-    for i,o in enumerate(predict):
-        id = str(data[i]['id'])
-        _list.append((id,int(o)))
-        # dict_result['data'][id] = o
-
-    dict_result['model_version'] = version
-    dict_result['date'] = datetime.datetime.today().strftime('%Y-%m-%d')    
-    dict_result['result'] = _list
-    return dict_result
-
-app = Flask('bank-prediction')
-
-@app.route('/predict', methods=['POST'])
+@app.route("/predict", methods=["POST"])
 def main():
-
-    logging.info('Receving request...')
+    logging.info("Receiving request...")
     request_data = request.get_json()
     data = convertdata(request_data)
 
-    logging.info('Getting model...')
-    model = getmodel()
-    version = model.__hash__()
+    logging.info("Predicting...")
+    pred_result = predict(model, data)
 
-    logging.info('Predicting...')
-    pred_result = predict(model,data)
-    
-    result = preparerespond(pred_result,request_data,version)
+    result = prepare_response(pred_result, request_data, RUN_ID)
 
-    logging.info('Logging data...')
-    save_request(request_data,pred_result)
+    logging.info("Logging data...")
+    save_request(request_data, pred_result)
 
-
-    logging.info('Done executing...')
+    logging.info("Done executing...")
     return jsonify(result)
 
+
 if __name__ == "__main__":
-    serve(app=app,host='0.0.0.0',port=9696)
+    serve(app=app, host="0.0.0.0", port=API_PORT)

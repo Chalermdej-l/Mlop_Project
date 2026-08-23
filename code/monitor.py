@@ -1,90 +1,158 @@
-import warnings
-warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
-from prefect import flow,task
-from prefect.orion.schemas.schedules import CronSchedule
-from prefect.deployments import Deployment
-import pandas as pd
-import psycopg
-import os
 import datetime
-from evidently.report import Report
-from evidently import ColumnMapping
-from evidently.metrics import ColumnDriftMetric, DatasetDriftMetric, DatasetMissingValuesMetric,DataDriftTable
+import os
+import warnings
+from urllib.parse import quote_plus
 
-DB_NAME_GRAFANA = os.getenv('DB_NAME_GRAFANA')
-S3_BUCKET = os.getenv('S3_BUCKET_DATA','mlop-data')    
-AWS_DB_MONITOR = os.getenv('AWS_DB_MONITOR')
-AWS_USER_DB = os.getenv('AWS_USER_DB')
-AWS_PASS_DB = os.getenv('AWS_PASS_DB')
+import pandas as pd
+from evidently import ColumnMapping
+from evidently.metrics import (
+    ColumnDriftMetric,
+    DataDriftTable,
+    DatasetDriftMetric,
+    DatasetMissingValuesMetric,
+)
+from evidently.report import Report
+from prefect import flow, task
+from prefect.deployments import Deployment
+from prefect.orion.schemas.schedules import CronSchedule
+from sqlalchemy import create_engine, text
+
+from constants import DB_PORT
+
+DB_NAME_GRAFANA = os.getenv("DB_NAME_GRAFANA")
+S3_BUCKET = os.getenv("S3_BUCKET_DATA", "mlop-data")
+AWS_DB_MONITOR = os.getenv("AWS_DB_MONITOR")
+AWS_USER_DB = os.getenv("AWS_USER_DB")
+AWS_PASS_DB = os.getenv("AWS_PASS_DB")
+
+# One engine shared by getlogdata() and writedata(); pandas needs a
+# SQLAlchemy engine, not a raw psycopg connection.
+engine = create_engine(
+    f"postgresql+psycopg://{quote_plus(AWS_USER_DB)}:{quote_plus(AWS_PASS_DB)}"
+    f"@{AWS_DB_MONITOR}:{DB_PORT}/{DB_NAME_GRAFANA}"
+)
+
+# Num feature
+num_features = ["pdays", "emprate", "priceidx", "confidx", "euribor3m", "employed"]
+# Cat feature
+cat_features = [
+    "age",
+    "job",
+    "marital",
+    "education",
+    "default_bool",
+    "housing",
+    "loan",
+    "contact",
+    "duration",
+    "campaign",
+    "previous",
+    "poutcome",
+]
+
+warnings.filterwarnings("ignore", message=".*The 'nopython' keyword.*")
+
 
 def getrefdata():
-    path = f's3://{S3_BUCKET}/bank-additional-full.csv'
-    reference_df = pd.read_csv(path,sep=';')
-    reference_df['y'] = (reference_df['y'] == 'yes').astype('int')
-    reference_df.drop([ 'month', 'day_of_week', 'id'],axis=1,inplace=True)
-    reference_df.columns = ['age', 'job', 'marital', 'education', 'default_bool', 'housing', 'loan','contact', 'duration', 'campaign', 'pdays', 'previous', 'poutcome','emprate', 'priceidx', 'confidx', 'euribor3m', 'employed','prediction']
+    path = f"s3://{S3_BUCKET}/bank-additional-full.csv"
+    reference_df = pd.read_csv(path, sep=";")
+    reference_df["y"] = (reference_df["y"] == "yes").astype("int")
+    reference_df.drop(["month", "day_of_week", "id"], axis=1, inplace=True)
+    reference_df.columns = [
+        "age",
+        "job",
+        "marital",
+        "education",
+        "default_bool",
+        "housing",
+        "loan",
+        "contact",
+        "duration",
+        "campaign",
+        "pdays",
+        "previous",
+        "poutcome",
+        "emprate",
+        "priceidx",
+        "confidx",
+        "euribor3m",
+        "employed",
+        "prediction",
+    ]
     return reference_df
 
-def getlogdata():
 
-    query= """
-    select * from user_log;
-    """
-    with psycopg.connect(f"host={AWS_DB_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user={AWS_USER_DB} password={AWS_PASS_DB}", autocommit=True) as con:
-        receive_df = pd.read_sql_query(query, con)
-    con.close()
-    receive_df.drop(['id','datestamp'],inplace=True,axis=1)
+def getlogdata():
+    query = "select * from user_log;"
+    receive_df = pd.read_sql_query(query, engine)
+    receive_df.drop(["id", "datestamp"], inplace=True, axis=1)
     return receive_df
 
+
 @task
-def genmetric(reference_df,receive_df):
-    num_features = ['pdays' ,'emprate', 'priceidx', 'confidx', 'euribor3m', 'employed']
-    cat_features =  ['age', 'job', 'marital', 'education', 'default_bool', 'housing', 'loan','contact', 'duration', 'campaign', 'previous', 'poutcome']
+def genmetric(reference_df, receive_df):
     column_mapping = ColumnMapping(
-        prediction='prediction',
+        prediction="prediction",
         numerical_features=num_features,
         categorical_features=cat_features,
-        target=None
-                )
-    report = Report(metrics = [
-        ColumnDriftMetric(column_name='prediction'),
-        DatasetDriftMetric(),
-        DatasetMissingValuesMetric(),
-        DataDriftTable()
-    ])
-    report.run(reference_data = reference_df, current_data = receive_df,column_mapping=column_mapping)    
+        target=None,
+    )
+    report = Report(
+        metrics=[
+            ColumnDriftMetric(column_name="prediction"),
+            DatasetDriftMetric(),
+            DatasetMissingValuesMetric(),
+            DataDriftTable(),
+        ]
+    )
+    report.run(
+        reference_data=reference_df,
+        current_data=receive_df,
+        column_mapping=column_mapping,
+    )
     result = report.as_dict()
     timestamp = datetime.datetime.now()
-    rediction_drift = result['metrics'][0]['result']['drift_score']
-    num_drifted_columns = result['metrics'][1]['result']['number_of_drifted_columns']
-    share_missing_values = result['metrics'][2]['result']['current']['share_of_missing_values']
-    share_of_drifted_columns = result['metrics'][3]['result']['share_of_drifted_columns']
-    return (timestamp,rediction_drift,num_drifted_columns,share_missing_values,share_of_drifted_columns)
+    prediction_drift = result["metrics"][0]["result"]["drift_score"]
+    num_drifted_columns = result["metrics"][1]["result"]["number_of_drifted_columns"]
+    share_missing_values = result["metrics"][2]["result"]["current"][
+        "share_of_missing_values"
+    ]
+    share_of_drifted_columns = result["metrics"][3]["result"]["share_of_drifted_columns"]
+    return (
+        timestamp,
+        prediction_drift,
+        num_drifted_columns,
+        share_missing_values,
+        share_of_drifted_columns,
+    )
 
-def writedata(record):   
-    query= '''
-    insert into monitor_log(time_stamp, drift_score, drift_col, missing_val,share_drift) values (%s, %s, %s, %s, %s)
-    '''
-    with psycopg.connect(f"host={AWS_DB_MONITOR} dbname={DB_NAME_GRAFANA} port=5432 user={AWS_USER_DB} password={AWS_PASS_DB}", autocommit=True) as con:
-        sql = con.execute(query,record)
-    return None
+
+def writedata(record):
+    query = (
+        "insert into monitor_log(time_stamp, drift_score, drift_col, "
+        "missing_val, share_drift) values (%s, %s, %s, %s, %s)"
+    )
+    with engine.begin() as con:
+        con.execute(text(query), record)
+
 
 @flow(log_prints=True)
 def getmonitor():
-    print('Getting reference data...')
+    print("Getting reference data...")
     reference_df = getrefdata()
-    print('Getting log data...')
+    print("Getting log data...")
     receive_df = getlogdata()
-    print('Generating metric...')
-    metric = genmetric(reference_df,receive_df)
-    print('Writing data to database...')
+    print("Generating metric...")
+    metric = genmetric(reference_df, receive_df)
+    print("Writing data to database...")
     writedata(metric)
-    print('Finish running script.')
+    print("Finish running script.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     deployment = Deployment.build_from_flow(
         flow=getmonitor,
         name="MLOP-MonitorML",
-        schedule=(CronSchedule(cron="0 22 * * *"))
+        schedule=(CronSchedule(cron="0 22 * * *")),
     )
     deployment.apply()
