@@ -1,0 +1,17 @@
+# Copy to variables.tfvars and fill in real values. variables.tfvars is
+# gitignored; never commit real credentials.
+
+aws_region         = "ap-southeast-1"
+aws_region_sn      = "ap-southeast-1a"
+aws_region_sn2     = "ap-southeast-1b"
+db_name_ml         = "MLOP_Backend"
+db_name_moni       = "MONITOR_DB"
+db_username        = "CHANGE_ME"
+db_password        = "CHANGE_ME"
+db_identifier_ml   = "mlopml"
+db_identifier_moni = "mlopmoni"
+db_instance_type   = "db.t3.micro"
+ec2_instance       = "t2.xlarge"
+
+# Your egress IP, e.g. "203.0.113.7/32"
+allowed_cidr = "CHANGE_ME"

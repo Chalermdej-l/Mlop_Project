@@ -7,7 +7,6 @@
 export
 
 MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlproject_mlserver_1)
-API_URL=$(shell terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
 
 # AWS command
 awssetup:
@@ -91,9 +90,9 @@ infra-create:
 	terraform -chdir=./infra apply -var-file=variables.tfvars -auto-approve
 
 infra-prep:
-	terraform output -raw -state=infra/terraform.tfstate private_key_pem > key/private.pem
-	terraform output -raw -state=infra/terraform.tfstate public_key_openssh > key/public.txt
-	terraform output -state=infra/terraform.tfstate -json > output.json
+	terraform -chdir=./infra output -raw private_key_pem > key/private.pem
+	terraform -chdir=./infra output -raw public_key_openssh > key/public.txt
+	terraform -chdir=./infra output -json > output.json
 	python code/output.py
 	python infra/code/createtable.py ${DB_NAME_MONI} ${AWS_USER_DB} ${AWS_PASS_DB} ${AWS_DB_MONITOR} 5432
 
@@ -124,12 +123,12 @@ getdata:
 	aws s3 cp data/bank-additional-full.csv s3://${S3_BUCKET_DATA}
 
 deploy-api:
-	db_endpoint=$(terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
+	db_endpoint=$(terraform -chdir=./infra output DBS_ENDPOINT)
 	db_endpoint=$(echo $db_endpoint | tr -d '"')
 	model_id=$(python code/deploymodel.py $db_endpoint)
 	ssh -i key/private.pem ubuntu@${db_endpoint} "cd mlproject && RUN_ID=${model_id} docker-compose --profile webapp up --detac"
 
 testapi:
-	db_endpoint=$(terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
+	db_endpoint=$(terraform -chdir=./infra output DBS_ENDPOINT)
 	db_endpoint=$(echo $db_endpoint | tr -d '"')
 	python code/api_test.py $db_endpoint

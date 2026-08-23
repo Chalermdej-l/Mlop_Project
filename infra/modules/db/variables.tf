@@ -1,27 +1,36 @@
 variable "aws_region_sn" {
-    type = string
+  type = string
 }
+
 variable "aws_region_sn2" {
-    type = string
+  type = string
 }
+
 variable "db_name_ml" {
-    type = string
+  type = string
 }
+
 variable "db_name_moni" {
-    type = string
+  type = string
 }
+
 variable "db_username" {
-    type = string
+  type = string
 }
+
 variable "db_password" {
-    type = string
+  type      = string
+  sensitive = true
 }
+
 variable "db_identifier_ml" {
-    type = string
+  type = string
 }
+
 variable "db_identifier_moni" {
-    type = string
+  type = string
 }
-variable "db_intance_type" {
-    type = string
+
+variable "db_instance_type" {
+  type = string
 }
