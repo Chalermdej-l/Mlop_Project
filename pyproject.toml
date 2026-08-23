@@ -1,0 +1,24 @@
+[project]
+name = "mlop-project"
+version = "0.1.0"
+description = "MLOps pipeline: XGBoost on the bank marketing dataset with Prefect, MLflow, AWS and Grafana"
+requires-python = ">=3.11,<3.13"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["code"]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP",  # pyupgrade
+    "B",  # flake8-bugbear
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["code"]
+testpaths = ["tests"]
