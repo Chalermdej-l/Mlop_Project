@@ -1,17 +1,18 @@
 apiVersion: 1
 
+# $VARIABLE values are expanded by Grafana at startup from the container
+# environment (see the grafana service in docker-compose.yml).
 datasources:
   - name: PostgreSQL
     type: postgres
     access: proxy
-    url: "AWS_DB_MONITOR"
-    database: MONITOR_DB
-    user: mlop_useradmin
-    password: mlop_passadmin
+    url: $AWS_DB_MONITOR
+    database: $DB_NAME_MONI
+    user: $AWS_USER_DB
     isDefault: true
     editable: true
     secureJsonData:
-      password: 'mlop_passadmin'
+      password: $AWS_PASS_DB
     jsonData:
-      sslmode: 'require'
+      sslmode: require
       tlsSkipVerify: true

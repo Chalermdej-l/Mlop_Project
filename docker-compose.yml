@@ -2,39 +2,48 @@ version: "3.9"
 
 networks:
   back-tier:
-  
-# Cloud deployment
-services:  
+
+services:
   mlserver:
     restart: always
     image: mlflow
     environment:
       - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
-      - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION} 
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SECRET}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_USER_DB=${AWS_USER_DB}
+      - AWS_PASS_DB=${AWS_PASS_DB}
+      - AWS_DB_ML=${AWS_DB_ML}
+      - DB_NAME_ML=${DB_NAME_ML}
+      - S3_BUCKET=${S3_BUCKET}
     expose:
-        - 5000     
+      - 5000
     ports:
-        - "5000:5000"    
+      - "5000:5000"
     networks:
-        - back-tier 
-    command: mlflow server --host 0.0.0.0 --backend-store-uri postgresql://${AWS_USER_DB}:${AWS_PASS_DB}@${AWS_DB_ML}:5432/${DB_NAME_ML} --default-artifact-root s3://${S3_BUCKET} 
+      - back-tier
+    # The $ variables are expanded inside the container from its own
+    # environment, so no credential ever appears in this file.
+    command: >
+      sh -c "mlflow server --host 0.0.0.0
+      --backend-store-uri postgresql://$$AWS_USER_DB:$$AWS_PASS_DB@$$AWS_DB_ML:5432/$$DB_NAME_ML
+      --default-artifact-root s3://$$S3_BUCKET"
     profiles: ["mlflow"]
 
   agent:
     image: python_prefect_agent
     restart: always
     networks:
-        - back-tier 
+      - back-tier
     environment:
       - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
-      - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SECRET}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
       - AWS_DB_MONITOR=${AWS_DB_MONITOR}
       - AWS_USER_DB=${AWS_USER_DB}
       - AWS_PASS_DB=${AWS_PASS_DB}
-      - PREFECT_API_URL=${Prefect_API_Login}
-      - PREFECT_API_KEY=${Prefect_API_KEY}
+      - PREFECT_API_URL=${PREFECT_API_URL}
+      - PREFECT_API_KEY=${PREFECT_API_KEY}
       - S3_BUCKET=${S3_BUCKET_DATA}
       - MLFLOW_URI=${MLFLOW_URI}
       - DB_NAME_MONI=${DB_NAME_MONI}
@@ -42,26 +51,25 @@ services:
     profiles: ["mlflow-agent"]
     command: bash -c "python train.py && python monitor.py && prefect agent start -q default"
 
-
   webapp:
     restart: always
     image: webapp
     ports:
-        - "9696:9696"  
+      - "9696:9696"
     environment:
-        - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
-        - AWS_SECRET_ACCESS_KEY=${ACCESS_SCRECT}
-        - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
-        - RUN_ID=${RUN_ID}
-        - S3_BUCKET=${S3_BUCKET}
-        - EXPERIMENT_ID=${EXPERIMENT_ID}
-        - DB_NAME_MONI=${DB_NAME_MONI}
-        - AWS_USER_DB=${AWS_USER_DB}
-        - AWS_PASS_DB=${AWS_PASS_DB}
-        - AWS_DB_MONITOR=${AWS_DB_MONITOR}
-        - DB_NAME_GRAFANA=${DB_NAME_MONI}
+      - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${ACCESS_SECRET}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - RUN_ID=${RUN_ID}
+      - S3_BUCKET=${S3_BUCKET}
+      - EXPERIMENT_ID=${EXPERIMENT_ID}
+      - DB_NAME_MONI=${DB_NAME_MONI}
+      - AWS_USER_DB=${AWS_USER_DB}
+      - AWS_PASS_DB=${AWS_PASS_DB}
+      - AWS_DB_MONITOR=${AWS_DB_MONITOR}
+      - DB_NAME_GRAFANA=${DB_NAME_MONI}
     command: waitress-serve --host 0.0.0.0 --port 9696 predict:app
-    profiles: ["webapp"]  
+    profiles: ["webapp"]
 
   grafana:
     image: grafana/grafana
@@ -72,7 +80,11 @@ services:
       - ./config/dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./config/dashboards:/opt/grafana/dashboards
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - AWS_USER_DB=${AWS_USER_DB}
+      - AWS_PASS_DB=${AWS_PASS_DB}
+      - AWS_DB_MONITOR=${AWS_DB_MONITOR}
+      - DB_NAME_MONI=${DB_NAME_MONI}
     restart: always
     profiles: ["monitor"]

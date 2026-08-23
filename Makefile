@@ -1,4 +1,10 @@
-include .env
+# .env holds static user values, .env.local holds values generated at
+# runtime (DBS_ENDPOINT, AWS_DB_ML, AWS_DB_MONITOR, RUN_ID). Both may be
+# absent on a fresh clone, hence the silent includes. `export` makes every
+# variable available to docker-compose interpolation in the recipes.
+-include .env
+-include .env.local
+export
 
 MLFLOW_URI=$(shell docker inspect   -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  mlproject_mlserver_1)
 API_URL=$(shell terraform output -state=infra/terraform.tfstate DBS_ENDPOINT)
@@ -95,14 +101,16 @@ infra-prep:
 vm-connect:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT}
 
+# Run after infra-prep so .env.local exists.
 vm-copy:
-	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT} mkdir mlproject
+	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT} mkdir -p mlproject
 	scp -i key/private.pem -r ./requirements ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirements
 	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
 	scp -i key/private.pem -r ./docker ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker
-	scp -i key/private.pem -r ./.env ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env
-	scp -i key/private.pem -r ./docker-compose.yml ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker-compose.yml
-	scp -i key/private.pem -r ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile
+	scp -i key/private.pem ./.env ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env
+	scp -i key/private.pem ./.env.local ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env.local
+	scp -i key/private.pem ./docker-compose.yml ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker-compose.yml
+	scp -i key/private.pem ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile
 	scp -i key/private.pem -r ./config ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/config
 
 vm-setup:

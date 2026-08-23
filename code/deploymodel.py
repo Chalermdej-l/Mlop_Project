@@ -1,6 +1,8 @@
 from mlflow.tracking import MlflowClient
 import argparse
 
+from envutil import update_env_file
+
 def registermodel(client,name_model):       
     runs = client.search_runs(experiment_ids=1
                             ,filter_string="attribute.status = 'FINISHED'"
@@ -31,18 +33,7 @@ def deploy_model_prod(version,client,name_model):
     )
 
 def logmodelid(prod_model):
-    with open('.env','r')as f:
-        con =f.read()
-
-    with open('.env','w')as f:
-        for i in con.split('\n'):
-            para = i[:i.find('=')-1]
-            if para == 'RUN_ID':
-                f.write(f"RUN_ID = '{prod_model}'")
-
-            else:
-                f.write(i)
-            f.write('\n')
+    update_env_file(".env.local", "RUN_ID", str(prod_model))
 def main(mlflow_uri):
     client = MlflowClient(tracking_uri=f'http://{mlflow_uri}:5000')
     name_model = 'ML_xgb'   
