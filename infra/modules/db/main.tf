@@ -44,9 +44,9 @@ resource "aws_route" "mlop_route" {
 }
 
 resource "aws_security_group" "rds_sg" {
-  name   = "rds_security_group"
+  name        = "rds_security_group"
   description = "Security group for RDS databases (VPC traffic only)"
-  vpc_id = aws_vpc.mlop_vpc.id
+  vpc_id      = aws_vpc.mlop_vpc.id
 
   ingress {
     from_port   = 5432
@@ -58,19 +58,19 @@ resource "aws_security_group" "rds_sg" {
 
 # Databases
 resource "aws_db_instance" "DB_ML" {
-  allocated_storage    = 10
-  storage_type         = "gp2"
-  engine               = "postgres"
-  engine_version       = "15"
-  instance_class       = var.db_instance_type
-  identifier           = var.db_identifier_ml
-  db_name              = var.db_name_ml
-  username             = var.db_username
-  password             = var.db_password
-  skip_final_snapshot  = true
-  publicly_accessible  = false
+  allocated_storage      = 10
+  storage_type           = "gp2"
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = var.db_instance_type
+  identifier             = var.db_identifier_ml
+  db_name                = var.db_name_ml
+  username               = var.db_username
+  password               = var.db_password
+  skip_final_snapshot    = true
+  publicly_accessible    = false
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  db_subnet_group_name = aws_db_subnet_group.db_subnet_mlop_group.name
+  db_subnet_group_name   = aws_db_subnet_group.db_subnet_mlop_group.name
 
   tags = {
     Name = "DB_ML"
@@ -78,19 +78,19 @@ resource "aws_db_instance" "DB_ML" {
 }
 
 resource "aws_db_instance" "DB_MONI" {
-  allocated_storage    = 10
-  storage_type         = "gp2"
-  engine               = "postgres"
-  engine_version       = "15"
-  instance_class       = var.db_instance_type
-  identifier           = var.db_identifier_moni
-  db_name              = var.db_name_moni
-  username             = var.db_username
-  password             = var.db_password
-  skip_final_snapshot  = true
-  publicly_accessible  = false
+  allocated_storage      = 10
+  storage_type           = "gp2"
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = var.db_instance_type
+  identifier             = var.db_identifier_moni
+  db_name                = var.db_name_moni
+  username               = var.db_username
+  password               = var.db_password
+  skip_final_snapshot    = true
+  publicly_accessible    = false
   vpc_security_group_ids = [aws_security_group.rds_sg.id]
-  db_subnet_group_name = aws_db_subnet_group.db_subnet_mlop_group.name
+  db_subnet_group_name   = aws_db_subnet_group.db_subnet_mlop_group.name
 
   tags = {
     Name = "DB_MONI"

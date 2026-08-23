@@ -69,6 +69,7 @@ flowchart TB
 - Cloud: AWS (S3, RDS for PostgreSQL, EC2)
 - Containerization: [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/)
 - Reproducibility: [GNU Make](https://www.gnu.org/software/make/)
+- Testing & Quality: pytest, ruff, pre-commit, GitHub Actions
 
 ## Project Flow
 
@@ -150,6 +151,21 @@ make dockerdown               # stop local containers
 make infra-down               # destroy EC2, RDS, VPC
 make s3delete                 # delete both S3 buckets
 ```
+
+## Development
+
+Lint and test locally:
+
+```
+pip install ruff==0.15.9 pytest==8.4.2
+pre-commit install
+
+ruff format --check .
+ruff check .
+pytest
+```
+
+The tests cover feature engineering, environment utilities, and the prediction API response shape, and need no AWS credentials. CI ([.github/workflows/ci.yml](/.github/workflows/ci.yml)) runs ruff, pytest, and `terraform fmt` on every push and pull request.
 
 ## Further Improvements
 - Move the API, MLflow server and Grafana to separate hosts instead of one VM + local Docker.
