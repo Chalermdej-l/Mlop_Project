@@ -1,6 +1,6 @@
 FROM  prefecthq/prefect:2.8.7-python3.11
 
-COPY requirement/Requirement-prefect.txt .
+COPY requirements/requirements-prefect.txt .
 COPY code/train.py .
 COPY code/helper.py .
 COPY code/monitor.py .

@@ -59,16 +59,16 @@ dockerdownml:
 	docker-compose -f docker-compose.yml --profile mlflow-agent down
 
 dockercreate:
-	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
-	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f dockerimage/prefect.dockerfile -t python_prefect_agent .
-	docker build -f dockerimage/webapp.dockerfile -t webapp .
+	docker build -f docker/sqlalchemy.dockerfile -t mlflow .
+	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f docker/prefect.dockerfile -t python_prefect_agent .
+	docker build -f docker/webapp.dockerfile -t webapp .
 
 dockercreate-web:
-	docker build -f dockerimage/webapp.dockerfile -t webapp .
+	docker build -f docker/webapp.dockerfile -t webapp .
 	
 dockercreate-back:
-	docker build -f dockerimage/sqlalchemy.dockerfile -t mlflow .
-	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f dockerimage/prefect.dockerfile -t python_prefect_agent .
+	docker build -f docker/sqlalchemy.dockerfile -t mlflow .
+	docker build --build-arg Prefect_Workspace=${Prefect_Workspace} --build-arg Prefect_API_KEY=${Prefect_API_KEY} -f docker/prefect.dockerfile -t python_prefect_agent .
 
 dockerprune:
 	docker system prune --force
@@ -97,9 +97,9 @@ vm-connect:
 
 vm-copy:
 	ssh -i key/private.pem ubuntu@${DBS_ENDPOINT} mkdir mlproject
-	scp -i key/private.pem -r ./requirement ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirement
+	scp -i key/private.pem -r ./requirements ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/requirements
 	scp -i key/private.pem -r ./code ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/code
-	scp -i key/private.pem -r ./dockerimage ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/dockerimage
+	scp -i key/private.pem -r ./docker ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker
 	scp -i key/private.pem -r ./.env ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/.env
 	scp -i key/private.pem -r ./docker-compose.yml ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/docker-compose.yml
 	scp -i key/private.pem -r ./Makefile ubuntu@${DBS_ENDPOINT}:/home/ubuntu/mlproject/Makefile

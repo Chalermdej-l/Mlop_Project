@@ -1,6 +1,6 @@
 FROM python:3.7-slim-buster
 
-COPY requirement/Requirement-web.txt .
+COPY requirements/requirements-web.txt .
 
 RUN pip install -r  Requirement-web.txt
 
