@@ -1,0 +1,12 @@
+.git
+.env
+.env.local
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+image/
+key/
+data/
+infra/
+*.tfstate*

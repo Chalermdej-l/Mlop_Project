@@ -1,13 +1,16 @@
-FROM  prefecthq/prefect:2.8.7-python3.11
+FROM prefecthq/prefect:2.8.7-python3.11
 
+WORKDIR /app
+
+# Install dependencies first so code changes don't bust the pip layer.
+# Prefect Cloud auth comes from PREFECT_API_URL/PREFECT_API_KEY at
+# runtime (docker-compose), never baked into an image layer.
 COPY requirements/requirements-prefect.txt .
+RUN pip install --no-cache-dir -r requirements-prefect.txt
+
 COPY code/train.py .
 COPY code/helper.py .
 COPY code/monitor.py .
-
-ARG Prefect_API_KEY
-ARG Prefect_Workspace
-
-RUN pip install -r  Requirement-prefect.txt
-RUN prefect cloud login --key $Prefect_API_KEY --workspace $Prefect_Workspace
-
+COPY code/features.py .
+COPY code/constants.py .
+COPY config/train_params.yaml config/

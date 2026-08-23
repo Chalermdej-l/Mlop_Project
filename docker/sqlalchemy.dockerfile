@@ -1,5 +1,11 @@
-FROM python:3.7-slim-buster
+FROM python:3.11-slim-bookworm
 
-COPY requirements/requirements-ml.txt .
+WORKDIR /app
 
-RUN pip install -r  Requirement-ml.txt
+RUN useradd --create-home app
+USER app
+
+COPY --chown=app:app requirements/requirements-ml.txt .
+RUN pip install --no-cache-dir -r requirements-ml.txt
+
+CMD ["mlflow", "server", "--host", "0.0.0.0"]

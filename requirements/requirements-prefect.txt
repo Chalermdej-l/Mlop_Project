@@ -7,5 +7,7 @@ s3fs
 evidently
 psycopg
 psycopg[binary]
+SQLAlchemy
+PyYAML
 boto3
 botocore

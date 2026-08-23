@@ -1,11 +1,11 @@
-version: "3.9"
-
 networks:
   back-tier:
 
 services:
   mlserver:
     restart: always
+    # Stable name: Makefile resolves MLFLOW_URI from this container.
+    container_name: mlproject-mlserver-1
     image: mlflow
     environment:
       - AWS_ACCESS_KEY_ID=${ACCESS_KEY}
