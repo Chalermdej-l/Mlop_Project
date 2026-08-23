@@ -102,9 +102,7 @@ def main():
                             pred = pipeline.predict_proba(x_test)[:, 1]
                             sco, f1, fpr, tpr = score(y_test, pred)
                             print("Logging params...")
-                            mlflow.log_metrics(
-                                {"score": sco, "f1": f1, "fp": fpr, "tp": tpr}
-                            )
+                            mlflow.log_metrics({"score": sco, "f1": f1, "fp": fpr, "tp": tpr})
                             mlflow.sklearn.log_model(
                                 pipeline,
                                 artifact_path="model",

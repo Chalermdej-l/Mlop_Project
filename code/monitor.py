@@ -114,9 +114,7 @@ def genmetric(reference_df, receive_df):
     timestamp = datetime.datetime.now()
     prediction_drift = result["metrics"][0]["result"]["drift_score"]
     num_drifted_columns = result["metrics"][1]["result"]["number_of_drifted_columns"]
-    share_missing_values = result["metrics"][2]["result"]["current"][
-        "share_of_missing_values"
-    ]
+    share_missing_values = result["metrics"][2]["result"]["current"]["share_of_missing_values"]
     share_of_drifted_columns = result["metrics"][3]["result"]["share_of_drifted_columns"]
     return (
         timestamp,

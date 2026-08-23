@@ -46,7 +46,12 @@ model = getmodel()
 def save_request(datas, predict):
     current_time = datetime.datetime.today()
     query = """
-    insert into user_log(age, job, marital, education, default_bool, housing, loan, contact, duration, campaign, pdays, previous, poutcome, emprate, priceidx, confidx, euribor3m, employed, id, datestamp, prediction) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    insert into user_log(
+        age, job, marital, education, default_bool, housing, loan, contact,
+        duration, campaign, pdays, previous, poutcome,
+        emprate, priceidx, confidx, euribor3m, employed,
+        id, datestamp, prediction
+    ) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
     """
     with get_db_connection() as con:
         for i, data in enumerate(datas):

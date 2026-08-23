@@ -6,28 +6,42 @@ from features import bucket_age, bucket_duration
 def _legacy_age(age: int) -> int:
     """The inline transform as it appeared in the original train.py/predict.py."""
     return (
-        1 if age >= 0 and age < 32 else
-        2 if age >= 32 and age < 38 else
-        3 if age >= 38 and age < 47 else
-        4 if age >= 47 and age < 60 else
-        5 if age >= 60 and age < 90 else
-        6
+        1
+        if age >= 0 and age < 32
+        else 2
+        if age >= 32 and age < 38
+        else 3
+        if age >= 38 and age < 47
+        else 4
+        if age >= 47 and age < 60
+        else 5
+        if age >= 60 and age < 90
+        else 6
     )
 
 
 def _legacy_duration(duration: int) -> int:
     """The inline transform as it appeared in the original train.py/predict.py."""
     return (
-        1 if duration >= 0 and duration < 30 else
-        2 if duration >= 30 and duration < 60 else
-        3 if duration >= 60 and duration < 120 else
-        4 if duration >= 120 and duration < 180 else
-        5 if duration >= 180 and duration < 240 else
-        6 if duration >= 240 and duration < 300 else
-        7 if duration >= 300 and duration < 360 else
-        8 if duration >= 360 and duration < 420 else
-        9 if duration >= 420 and duration < 480 else
-        10
+        1
+        if duration >= 0 and duration < 30
+        else 2
+        if duration >= 30 and duration < 60
+        else 3
+        if duration >= 60 and duration < 120
+        else 4
+        if duration >= 120 and duration < 180
+        else 5
+        if duration >= 180 and duration < 240
+        else 6
+        if duration >= 240 and duration < 300
+        else 7
+        if duration >= 300 and duration < 360
+        else 8
+        if duration >= 360 and duration < 420
+        else 9
+        if duration >= 420 and duration < 480
+        else 10
     )
 
 

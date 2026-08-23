@@ -17,9 +17,7 @@ def main() -> None:
 
     update_env_file(ENV_LOCAL, "DBS_ENDPOINT", json_data["DBS_ENDPOINT"]["value"])
     update_env_file(ENV_LOCAL, "AWS_DB_ML", json_data["AWS_DB_ML"]["value"][:-5])
-    update_env_file(
-        ENV_LOCAL, "AWS_DB_MONITOR", json_data["AWS_DB_MONITOR"]["value"][:-5]
-    )
+    update_env_file(ENV_LOCAL, "AWS_DB_MONITOR", json_data["AWS_DB_MONITOR"]["value"][:-5])
     print(f"Wrote DBS_ENDPOINT, AWS_DB_ML, AWS_DB_MONITOR to {ENV_LOCAL}")
 
 
