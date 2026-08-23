@@ -16,7 +16,7 @@ First, clone the project and navigate to the cloned directory:
 
 ```
 git clone https://github.com/Chalermdej-l/Mlop_Project.git
-cd MLop_Project
+cd Mlop_Project
 ```
 
 Update the `.env` file with the necessary credentials mentioned in the `Prerequisite` section.
@@ -130,7 +130,7 @@ Go back to the `cloud terminal` and run the following commands to update the VM 
 cd mlproject
 sudo apt-get update -y
 sudo apt install python3-pip -y
-sudo pip install make
+sudo apt install make -y
 ```
 
 After this is done, run:
